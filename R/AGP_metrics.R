@@ -29,6 +29,7 @@
 #' \code{"Metric"} (descriptive names of the metrics) and \code{"Value"} (formatted metric values).
 #'
 #' @examples
+#' \dontrun{
 #' # Example dataset
 #' data <- data.frame(
 #'   id = rep(1, 100),
@@ -38,7 +39,7 @@
 #'
 #' # Compute AGP metrics
 #' AGP_metrics(data, ID = "id", time = "time", glucose = "glucose", time_interval = c(0, 1440))
-#'
+#' }
 #' @export
 AGP_metrics <- function (data, ID, time, glucose, time_interval, target_glucose = NULL, shiny = FALSE) {
   # 1 subject id

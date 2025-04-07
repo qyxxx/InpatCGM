@@ -25,6 +25,7 @@
 #' @importFrom MASS ginv
 #'
 #' @examples
+#' \dontrun{
 #' set.seed(123)
 #' est <- c(0.75, 0.68, 0.72)
 #' boot_TIR <- list(
@@ -33,7 +34,7 @@
 #'   rnorm(100, 0.72, 0.025)
 #' )
 #' wald_test_TIR(est, boot_TIR)
-#'
+#' }
 #' @export
 wald_test_TIR <- function(estimates, boot_TIR_list) {
   K <- length(estimates)

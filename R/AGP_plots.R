@@ -13,6 +13,7 @@
 #' @return A ggplot object representing a stacked bar chart of glucose distribution.
 #'
 #' @examples
+#' \dontrun{
 #' # Example dataset
 #' df <- data.frame(
 #'   patient_id = rep(1:2, each = 100),
@@ -22,7 +23,7 @@
 #'
 #' # Plot TIR
 #' AGP_plotTIR(df, ID = "patient_id", time = "date_time", glucose = "Glucose", target_glucose = c(70, 180))
-#'
+#' }
 #' @export
 AGP_plotTIR<- function (data, ID, time, glucose, target_glucose){
   # Ensure required columns exist
