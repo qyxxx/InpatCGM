@@ -253,6 +253,13 @@ shinyServer(function(input, output, session) {
     numericInput('AGP_SmoothingCoefficient', 'Enter Smoothing Coefficient for Plot', value = '0.3')
   })
 
+  # Reactive expression to safely parse AGP target glucose range
+  agp_targetglucoserange <- reactive({
+    req(input$AGP_TargetGlucoseRange)
+    parts <- strsplit(as.character(input$AGP_TargetGlucoseRange), ",")[[1]]
+    as.numeric(trimws(parts))
+  })
+
   ## prepare data and make the statistics and plots
   # subset AGP data -- by subject id
   AGP_data <- reactive({
@@ -281,20 +288,29 @@ shinyServer(function(input, output, session) {
 
   # show AGP_plotTIR
   AGP_plotTIR <- reactive({
-    agp_targetglucoserange <- as.numeric(strsplit(input$AGP_TargetGlucoseRange, ",")[[1]])
     data <- AGP_data()
-    cgm::AGP_plotTIR(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose, target_glucose = agp_targetglucoserange)
+    cgm::AGP_plotTIR(
+      data = data,
+      ID = input$ID,
+      time = input$Time,
+      glucose = input$Glucose,
+      target_glucose = agp_targetglucoserange()
+    )
   })
 
   output$AGP_plotTIR <- renderPlot({AGP_plotTIR()})
 
   # show AGP_plotDayAvg
   AGP_plotDayAvg <- reactive({
-    agp_targetglucoserange <- as.numeric(strsplit(input$AGP_TargetGlucoseRange, ",")[[1]])
     data <- AGP_data()
-    cgm::AGP_plotAGP(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose,
-                     target_glucose = agp_targetglucoserange,
-                     span = input$AGP_SmoothingCoefficient)
+    cgm::AGP_plotAGP(
+      data = data,
+      ID = input$ID,
+      time = input$Time,
+      glucose = input$Glucose,
+      target_glucose = agp_targetglucoserange(),
+      span = input$AGP_SmoothingCoefficient
+    )
   })
 
   output$AGP_plotDayAvg <- renderPlot({
@@ -303,10 +319,14 @@ shinyServer(function(input, output, session) {
 
   # show AGP_plotDaily
   AGP_plotDaily <- reactive({
-    agp_targetglucoserange <- as.numeric(strsplit(input$AGP_TargetGlucoseRange, ",")[[1]])
     data <- AGP_data()
-    cgm::AGP_plotDaily(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose,
-                       target_glucose = agp_targetglucoserange)
+    cgm::AGP_plotDaily(
+      data = data,
+      ID = input$ID,
+      time = input$Time,
+      glucose = input$Glucose,
+      target_glucose = agp_targetglucoserange()
+    )
   })
 
   output$AGP_plotDaily <- renderPlot({
