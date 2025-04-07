@@ -7,7 +7,7 @@ server <- function(input, output, session) {
     # Convert input$Time_Interval from string to numeric vector
     time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]])
     # read data with read_CGM_data()
-    cgm_data <- cgm::read_CGM_data(
+    cgm_data <- InpatCGM::read_CGM_data(
       file = input$CGMfile$datapath,
       ID = input$ID,
       time = input$Time,
@@ -16,7 +16,7 @@ server <- function(input, output, session) {
     )
     # If covariate file is uploaded, merge with CGM data
     if (!is.null(input$COVfile)) {
-      covariates <- cgm::read_covariate_data(
+      covariates <- InpatCGM::read_covariate_data(
         file = input$COVfile$datapath,
         ID = input$ID,
         covariate = input$Covariates_specified
@@ -86,7 +86,7 @@ server <- function(input, output, session) {
         }
 
         est <- tryCatch({
-          cgm::estTIR(
+          InpatCGM::estTIR(
             data = group_data,
             method = input$method,
             model = selected_model,
@@ -115,7 +115,7 @@ server <- function(input, output, session) {
         if (length(valid_results) == length(results)) {
           estimates <- sapply(valid_results, function(r) r$result$est)
           boot_TIR_list <- lapply(valid_results, function(r) r$result$boot_TIR)
-          test <- cgm::wald_test_TIR(estimates, boot_TIR_list)
+          test <- InpatCGM::wald_test_TIR(estimates, boot_TIR_list)
         } else {
           test <- NULL
         }
@@ -129,7 +129,7 @@ server <- function(input, output, session) {
       #
     } else {
       # Non-stratified
-      est <- cgm::estTIR(
+      est <- InpatCGM::estTIR(
         data = dat,
         method = input$method,
         model = selected_model,
@@ -279,7 +279,7 @@ server <- function(input, output, session) {
   AGP_Statistics <- reactive({
     time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]])
     data <- AGP_data()
-    cgm::AGP_metrics(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose, time_interval = time_interval, shiny = TRUE)
+    InpatCGM::AGP_metrics(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose, time_interval = time_interval, shiny = TRUE)
   })
 
   output$AGP_Statistics <- DT::renderDataTable({
@@ -289,7 +289,7 @@ server <- function(input, output, session) {
   # show AGP_plotTIR
   AGP_plotTIR <- reactive({
     data <- AGP_data()
-    cgm::AGP_plotTIR(
+    InpatCGM::AGP_plotTIR(
       data = data,
       ID = input$ID,
       time = input$Time,
@@ -303,7 +303,7 @@ server <- function(input, output, session) {
   # show AGP_plotDayAvg
   AGP_plotDayAvg <- reactive({
     data <- AGP_data()
-    cgm::AGP_plotAGP(
+    InpatCGM::AGP_plotAGP(
       data = data,
       ID = input$ID,
       time = input$Time,
@@ -320,7 +320,7 @@ server <- function(input, output, session) {
   # show AGP_plotDaily
   AGP_plotDaily <- reactive({
     data <- AGP_data()
-    cgm::AGP_plotDaily(
+    InpatCGM::AGP_plotDaily(
       data = data,
       ID = input$ID,
       time = input$Time,
