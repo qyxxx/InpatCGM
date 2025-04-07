@@ -1,4 +1,4 @@
-shinyServer(function(input, output, session) {
+server <- function(input, output, session) {
   #### SECTION INPUT DATA ####
   # input data, data cleaning, output data
   # read in the data
@@ -13,7 +13,7 @@ shinyServer(function(input, output, session) {
       time = input$Time,
       glucose = input$Glucose,
       time_interval = time_interval
-      )
+    )
     # If covariate file is uploaded, merge with CGM data
     if (!is.null(input$COVfile)) {
       covariates <- cgm::read_covariate_data(
@@ -45,14 +45,14 @@ shinyServer(function(input, output, session) {
   )
 
   #### SECTION meanTIR Estimation ####
-   observe({
-     req(data())
-     covariates <- strsplit(input$Covariates_specified, ",")[[1]]
-     covariates <- trimws(covariates)  # remove leading/trailing spaces
-     updateSelectInput(session, "strat_var",
-                       choices = covariates,
-                       selected = NULL)
-   })
+  observe({
+    req(data())
+    covariates <- strsplit(input$Covariates_specified, ",")[[1]]
+    covariates <- trimws(covariates)  # remove leading/trailing spaces
+    updateSelectInput(session, "strat_var",
+                      choices = covariates,
+                      selected = NULL)
+  })
 
   # Compute TIR
   TIR_result <- eventReactive(input$computeTIR, {
@@ -284,7 +284,7 @@ shinyServer(function(input, output, session) {
 
   output$AGP_Statistics <- DT::renderDataTable({
     DT::datatable(AGP_Statistics(), options = list(dom = 't'), rownames = FALSE, colnames = "")
-    })
+  })
 
   # show AGP_plotTIR
   AGP_plotTIR <- reactive({
@@ -414,4 +414,4 @@ shinyServer(function(input, output, session) {
   #   }
   # )
 
-})
+}

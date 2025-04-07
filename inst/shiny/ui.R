@@ -1,4 +1,4 @@
-shinyUI(fluidPage(
+ui <- fluidPage(
   # title
   titlePanel("TIR Analysis of CGM in Hospital"),
   # Panels
@@ -9,7 +9,7 @@ shinyUI(fluidPage(
                sidebarPanel(
                  # load long format CGM data
                  fileInput("CGMfile", "Choose CGM File (.csv)",
-                                        multiple =  FALSE, accept = ".csv"),
+                           multiple =  FALSE, accept = ".csv"),
                  textInput('ID', 'Enter column name corresponding to subject ID', value = 'patient_id'),
                  textInput('Time', 'Enter column name corresponding to timestamp', value = 'date_time'),
                  textInput('Glucose', 'Enter column name corresponding to glucose values', value = 'Glucose'),
@@ -82,31 +82,31 @@ shinyUI(fluidPage(
     tabPanel("AGP", fluid = TRUE,
              helpText("The ambulatory glucose profile (AGP)"),
              sidebarLayout(
-                          sidebarPanel(
-                                      uiOutput("AGP_Subject"),
-                                      uiOutput("AGP_TargetGlucoseRange"),
-                                      uiOutput("AGP_SmoothingCoefficient"),
-                                      downloadButton(outputId = "pdfAGP", label = "pdf"),
-                                      downloadButton(outputId = "pngAGP", label = "png")
-                                      # downloadButton(outputId = "htmlAGP", label = "html")
-                                      ),
-                          mainPanel(
-                                    fluidRow(
-                                            column(6, wellPanel("Percent CGM Readings in Ranges")),
-                                            column(6, wellPanel("CGM Statistics"))
-                                            ),
-                                    fluidRow(
-                                            column(6, plotOutput("AGP_plotTIR")),
-                                            column(6, DT::DTOutput("AGP_Statistics"))
-                                            ),
-                                    fluidRow(column(12, wellPanel("Ambulatory Glucose Profile (AGP)"))),
-                                    fluidRow(column(12,  plotOutput("AGP_plotDayAvg"))),
-                                    fluidRow(column(12, wellPanel("Daily Glucose Profiles"))),
-                                    fluidRow(column(12, plotOutput("AGP_plotDaily")))
-                                    )
-                          )
-            ),
+               sidebarPanel(
+                 uiOutput("AGP_Subject"),
+                 uiOutput("AGP_TargetGlucoseRange"),
+                 uiOutput("AGP_SmoothingCoefficient"),
+                 downloadButton(outputId = "pdfAGP", label = "pdf"),
+                 downloadButton(outputId = "pngAGP", label = "png")
+                 # downloadButton(outputId = "htmlAGP", label = "html")
+               ),
+               mainPanel(
+                 fluidRow(
+                   column(6, wellPanel("Percent CGM Readings in Ranges")),
+                   column(6, wellPanel("CGM Statistics"))
+                 ),
+                 fluidRow(
+                   column(6, plotOutput("AGP_plotTIR")),
+                   column(6, DT::DTOutput("AGP_Statistics"))
+                 ),
+                 fluidRow(column(12, wellPanel("Ambulatory Glucose Profile (AGP)"))),
+                 fluidRow(column(12,  plotOutput("AGP_plotDayAvg"))),
+                 fluidRow(column(12, wellPanel("Daily Glucose Profiles"))),
+                 fluidRow(column(12, plotOutput("AGP_plotDaily")))
+               )
+             )
+    ),
     # panel - TIR prediction
     tabPanel("TIR Prediction", fluid = TRUE)
   )
-))
+)

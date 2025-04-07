@@ -1,12 +1,12 @@
 Type: Package
 Package: InpatCGM
-Title: Tools for Analyzing Inpatient CGM Data.
+Title: Tools for Inpatient Continuous Glucose Monitoring (CGM) Data Analysis.
 Version: 0.0.1
 Authors@R: c(
     person("Qi", "Yu", , "qi.yu2@emory.edu", role = c("aut", "cre")),
     person("Limin", "Peng", , "lpeng@emory.edu", role = "aut")
   )
-Description: Efficient R package for analyzing CGM Data.
+Description: Provides an interactive Shiny application and supporting tools for analyzing inpatient continuous glucose monitoring (CGM) data. Includes features for data cleaning, computing mean time in range (TIR), AGP metrics, stratified analysis, hypothesis testing, and report generation with dynamic plots and tables.
 License: GPL (>= 3)
 Imports: 
     dplyr,
@@ -23,3 +23,5 @@ LazyData: true
 RoxygenNote: 7.3.2
 Remotes: 
     qyxxx/InpatCGM
+URL: https://github.com/qyxxx/InpatCGM
+BugReports: https://github.com/qyxxx/InpatCGM/issues
