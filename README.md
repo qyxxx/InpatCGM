@@ -22,3 +22,7 @@ InpatCGM::runInpatCGM()
 ```
 
 The app will open in your default web browser.
+
+## 💫 Online Shiny App
+
+The Shiny app can be accessed online at <https://qi-y.shinyapps.io/InpatCGM/>
