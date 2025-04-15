@@ -201,7 +201,7 @@ proposed_est_cox <- function(data, min_time = 0, max_time = (1440 * 7 - 5),
                              boot = NULL, value_in_range = "value_in_range") {
   # data <- data.table::as.data.table(data)
   # Fit Cox model
-  cox_fit <- survival::coxph(as.formula(paste0("survival::Surv(", start_col, ",", stop_col, ",", "event==1", ") ~ ", formula)), data = data, method="breslow")
+  cox_fit <- survival::coxph(as.formula(paste0("survival::Surv(", start_col, ",", stop_col, ",", "event==1", ") ~ ", formula, "+1")), data = data, method="breslow")
   # Baseline cumulative hazard
   baseline_hazard <- survival::basehaz(cox_fit, centered = FALSE)
   # Add time and hazard difference

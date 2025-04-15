@@ -5,7 +5,7 @@ server <- function(input, output, session) {
   data <- reactive({
     req(input$CGMfile)
     # Convert input$Time_Interval from string to numeric vector
-    time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]])
+    time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]]) * 1440
     # read data with read_CGM_data()
     cgm_data <- InpatCGM::read_CGM_data(
       file = input$CGMfile$datapath,
@@ -298,7 +298,7 @@ server <- function(input, output, session) {
 
   # show AGP_statistics
   AGP_Statistics <- reactive({
-    time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]])
+    time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]]) * 1440
     data <- AGP_data()
     InpatCGM::AGP_metrics(data = data, ID = input$ID, time = input$Time, glucose = input$Glucose, time_interval = time_interval, shiny = TRUE)
   })

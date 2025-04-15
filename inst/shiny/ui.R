@@ -13,7 +13,7 @@ ui <- fluidPage(
                  textInput('ID', 'Enter column name corresponding to subject ID', value = 'patient_id'),
                  textInput('Time', 'Enter column name corresponding to timestamp', value = 'date_time'),
                  textInput('Glucose', 'Enter column name corresponding to glucose values', value = 'Glucose'),
-                 textInput('Time_Interval', 'Enter target time interval upon enrollment in minutes', value = '1440, 5755'),
+                 textInput('Time_Interval', 'Enter target time interval upon enrollment in days', value = '1, 4'),
 
                  # load wide format covariate data
                  fileInput("COVfile", "Choose Covariates File (.csv)", multiple = FALSE, accept = ".csv"),
@@ -26,7 +26,7 @@ ui <- fluidPage(
                      value = ""
                    )
                  ),
-                 downloadButton("downloaddata", "Download Cleaned Data")
+                 downloadButton("downloaddata", "Download Cleaned Processed Data")
 
                ),
                mainPanel(DT::dataTableOutput("data"))
@@ -57,7 +57,7 @@ ui <- fluidPage(
                    # If "cox" model is selected, specify formula
                    conditionalPanel(
                      condition = "input.model == 'cox'",
-                     textInput("cox_formula", "Enter Cox Model Formula", value = "age + sex + bmi")
+                     textInput("cox_formula", "Enter Cox Model Formula (e.g., age + sex + bmi)", value = "")
                    )
                  ),
 
