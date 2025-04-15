@@ -13,6 +13,24 @@ if (!requireNamespace("devtools", quietly = TRUE))
 devtools::install_github("qyxxx/InpatCGM")
 ```
 
+or
+
+```r
+if (!requireNamespace("remotes", quietly = TRUE))
+  install.packages("remotes")
+
+remotes::install_github("qyxxx/InpatCGM")
+```
+
+or
+
+```r
+if (!requireNamespace("pak", quietly = TRUE))
+  install.packages("pak")
+
+pak::pak("qyxxx/InpatCGM")
+```
+
 ## 🚀 Launch the Shiny App
 
 To launch the interactive Shiny app for exploring inpatient CGM data:
