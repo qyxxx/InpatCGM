@@ -63,8 +63,11 @@ server <- function(input, output, session) {
         }
       )
 
-      # Exclude ID column for stratification choices
-      covariate_choices <- setdiff(names(covariate_data), input$ID)
+      # Exclude ID and select covariates with 1 < unique levels < 10
+      covariate_choices <- covariate_data |>
+        dplyr::select(-all_of(input$ID)) |>
+        dplyr::select(where(~ dplyr::n_distinct(.) > 1 & dplyr::n_distinct(.) < 10)) |>
+        names()
 
       updateSelectInput(session, "strat_var",
                         choices = covariate_choices,
