@@ -47,7 +47,7 @@ read_CGM_data <- function(file, ID, time, glucose, time_interval = c(1440, 5760)
   data <- data |> dplyr::filter(!is.na(.data[[glucose]]))
 
   # Filter rows within the specified time interval
-  data <- data |> dplyr::filter(minute_enrollment >= time_interval[1] & minute_enrollment <= time_interval[2])
+  data <- data |> dplyr::filter(minute_enrollment >= time_interval[1] & minute_enrollment <= time_interval[2] - 5)
 
   return(data)
 }

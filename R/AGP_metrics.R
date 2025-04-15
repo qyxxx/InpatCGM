@@ -52,11 +52,11 @@ AGP_metrics <- function (data, ID, time, glucose, time_interval, target_glucose 
   # following codes may have issue - some subject have usuall CGM readings at very beginning and those readings would be removed
   # follow_up_duration <- data |> dplyr::group_by(.data[[ID]]) |>
   #  dplyr::summarise(follow_up_duration = as.numeric(max(time) - min(time), units = "days")) |> dplyr::pull(follow_up_duration)
-  follow_up_duration <- ((data |> dplyr::group_by(.data[[ID]]) |> dplyr::arrange(.data[[time]]) |> dplyr::slice_tail(n=1) |> dplyr::pull(minute_enrollment)) - time_interval[1] + 5)/1440
+  follow_up_duration <- ((data |> dplyr::group_by(.data[[ID]]) |> dplyr::arrange(.data[[time]]) |> dplyr::slice_tail(n=1) |> dplyr::pull(minute_enrollment)) - time_interval[1])/1440
   # 5 evaluation window,this is the time interval of interest, which defined when input data
-  evaluation_window <- (time_interval[2] - time_interval[1] + 5)/1440
+  evaluation_window <- (time_interval[2] - time_interval[1])/1440
   # 6 this is the percent of available CGM readings within the target evaluation window
-  cgm_active_percent <- (data |> dplyr::group_by(.data[[ID]]) |> dplyr::summarise(active_readings = dplyr::n()) |> dplyr::pull(active_readings))/((time_interval[2] - time_interval[1])/5 + 1) * 100
+  cgm_active_percent <- (data |> dplyr::group_by(.data[[ID]]) |> dplyr::summarise(active_readings = dplyr::n()) |> dplyr::pull(active_readings))/((time_interval[2] - time_interval[1])/5) * 100
   # 7
   avg_glucose <- data |> dplyr::group_by(.data[[ID]]) |> dplyr::summarise(avg_glucose = mean(.data[[glucose]])) |> dplyr::pull(avg_glucose)
   # 8
