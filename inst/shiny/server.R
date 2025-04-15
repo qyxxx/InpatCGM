@@ -19,7 +19,11 @@ server <- function(input, output, session) {
       covariates <- InpatCGM::read_covariate_data(
         file = input$COVfile$datapath,
         ID = input$ID,
-        covariate = input$Covariates_specified
+        covariate = if (input$specify_covariates && nzchar(input$Covariates_specified)) {
+          input$Covariates_specified
+        } else {
+          NULL  # Indicates using all covariates
+        }
       )
       cgm_data <- dplyr::inner_join(cgm_data, covariates, by = input$ID)
     }

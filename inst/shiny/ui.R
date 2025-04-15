@@ -17,8 +17,15 @@ ui <- fluidPage(
 
                  # load wide format covariate data
                  fileInput("COVfile", "Choose Covariates File (.csv)", multiple = FALSE, accept = ".csv"),
-                 textInput('Covariates_specified', 'Specify covariates of interest', value = 'age, sex, bmi'),
-
+                 checkboxInput("specify_covariates", "Specify covariates of interest?", value = FALSE),
+                 conditionalPanel(
+                   condition = "input.specify_covariates == true",
+                   textInput(
+                     inputId = "Covariates_specified",
+                     label = "Covariates (e.g., age, sex, bmi)",
+                     value = ""
+                   )
+                 ),
                  downloadButton("downloaddata", "Download Cleaned Data")
 
                ),
