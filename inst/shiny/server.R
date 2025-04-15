@@ -51,11 +51,25 @@ server <- function(input, output, session) {
   #### SECTION meanTIR Estimation ####
   observe({
     req(data())
-    covariates <- strsplit(input$Covariates_specified, ",")[[1]]
-    covariates <- trimws(covariates)  # remove leading/trailing spaces
-    updateSelectInput(session, "strat_var",
-                      choices = covariates,
-                      selected = NULL)
+
+    if (!is.null(input$COVfile)) {
+      covariate_data <- InpatCGM::read_covariate_data(
+        file = input$COVfile$datapath,
+        ID = input$ID,
+        covariate = if (input$specify_covariates && nzchar(input$Covariates_specified)) {
+          input$Covariates_specified
+        } else {
+          NULL
+        }
+      )
+
+      # Exclude ID column for stratification choices
+      covariate_choices <- setdiff(names(covariate_data), input$ID)
+
+      updateSelectInput(session, "strat_var",
+                        choices = covariate_choices,
+                        selected = NULL)
+    }
   })
 
   # Compute TIR
