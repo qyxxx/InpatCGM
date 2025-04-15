@@ -86,8 +86,8 @@ ui <- fluidPage(
              )),
 
     # panel - individual metrics - AGP
-    tabPanel("AGP", fluid = TRUE,
-             helpText("The ambulatory glucose profile (AGP)"),
+    tabPanel("IGP", fluid = TRUE,
+             helpText("The inpatient glucose profile (IGP)"),
              sidebarLayout(
                sidebarPanel(
                  uiOutput("AGP_Subject"),
@@ -106,7 +106,7 @@ ui <- fluidPage(
                    column(6, plotOutput("AGP_plotTIR")),
                    column(6, DT::DTOutput("AGP_Statistics"))
                  ),
-                 fluidRow(column(12, wellPanel("Ambulatory Glucose Profile (AGP)"))),
+                 fluidRow(column(12, wellPanel("Inpatient Glucose Profile (IGP)"))),
                  fluidRow(column(12,  plotOutput("AGP_plotDayAvg"))),
                  fluidRow(column(12, wellPanel("Daily Glucose Profiles"))),
                  fluidRow(column(12, plotOutput("AGP_plotDaily")))
