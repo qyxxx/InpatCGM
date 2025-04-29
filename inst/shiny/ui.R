@@ -7,25 +7,39 @@ ui <- fluidPage(
     tabPanel("Data", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
+                 # 1. CGM file
                  fileInput("CGMfile", "Choose CGM File (.csv)", multiple = FALSE, accept = ".csv"),
+                 actionButton("check_CGMfile", "Check CGM File"),
+
+                 # 2. CGM columns
                  textInput('ID', 'Subject ID column', value = 'patient_id'),
                  textInput('Time', 'Timestamp column', value = 'date_time'),
                  textInput('Glucose', 'Glucose column', value = 'Glucose'),
                  textInput('Time_Interval', 'Time interval in days', value = '1,4'),
 
-                 fileInput("COVfile", "Choose Covariates File (.csv)", multiple = FALSE, accept = ".csv"),
+                 # 3. Covariate file (optional)
+                 fileInput("COVfile", "Choose Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
+                 actionButton("check_COVfile", "Check Covariate File"),
+                 # 3b. Covariate ID Column
+                 textInput('COV_ID', 'Covariate File: ID column', value = 'patient_id'),
+
+                 # 4. Covariate columns (optional)
                  checkboxInput("specify_covariates", "Specify covariates?", value = FALSE),
                  conditionalPanel(
                    condition = "input.specify_covariates == true",
                    textInput("Covariates_specified", "Covariates (comma-separated)", value = "")
                  ),
 
-                 actionButton("load_data", "Process Data"),
-                 downloadButton("downloaddata", "Download Processed Data")
+                 # 5. Load and download
+                 actionButton("load_data", "Load Data"),
+                 downloadButton("downloaddata", "Download Cleaned Data")
                ),
 
                mainPanel(
-                 verbatimTextOutput("error_msg"),
+                 verbatimTextOutput("error_msg"),  # for showing errors
+                 h4("File Preview"),
+                 DT::dataTableOutput("file_preview"),
+                 h4("Processed CGM + Covariate Data"),
                  DT::dataTableOutput("data")
                )
              )),

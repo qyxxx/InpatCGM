@@ -1,6 +1,35 @@
 server <- function(input, output, session) {
   #### SECTION INPUT DATA ####
   # input data, data cleaning, output data
+  # store raw files
+  raw_CGM <- reactiveVal(NULL)
+  raw_COV <- reactiveVal(NULL)
+
+  observeEvent(input$CGMfile, {
+    req(input$CGMfile)
+    raw_CGM(read.csv(input$CGMfile$datapath, stringsAsFactors = FALSE))
+  })
+
+  observeEvent(input$COVfile, {
+    req(input$COVfile)
+    raw_COV(read.csv(input$COVfile$datapath, stringsAsFactors = FALSE))
+  })
+
+  # which file to preview
+  file_to_preview <- reactiveVal(NULL)
+
+  observeEvent(input$check_CGMfile, {
+    file_to_preview(raw_CGM())
+  })
+
+  observeEvent(input$check_COVfile, {
+    file_to_preview(raw_COV())
+  })
+
+  output$file_preview <- DT::renderDataTable({
+    req(file_to_preview())
+    DT::datatable(file_to_preview(), options = list(pageLength = 5))
+  })
   # read in the data
   data_and_error <- eventReactive(input$load_data, {
     tryCatch({
@@ -40,7 +69,10 @@ server <- function(input, output, session) {
             covariates <- covariates[, c(input$ID, covariate_vec), drop = FALSE]
           }
 
-          cgm_data <- dplyr::inner_join(cgm_data, covariates, by = input$ID)
+          cgm_data <- dplyr::inner_join(
+            cgm_data, covariates,
+            by = setNames(input$COV_ID, input$ID)
+          )
         }
 
         list(data = cgm_data, error = NULL)
