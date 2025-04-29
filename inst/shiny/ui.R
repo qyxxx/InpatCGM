@@ -7,6 +7,13 @@ ui <- fluidPage(
     tabPanel("Data", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
+                 wellPanel(
+                   style = "background-color: #ffe0e0; border: 1px solid red;",
+                   tags$p(
+                     style = "color: red; font-weight: bold;",
+                     "⚠️ Important: Please do not upload sensitive or personally identifiable information (PII)."
+                   )
+                 ),
                  # 1. CGM file
                  fileInput("CGMfile", "Choose CGM File (.csv)", multiple = FALSE, accept = ".csv"),
                  actionButton("check_CGMfile", "Check CGM File"),
