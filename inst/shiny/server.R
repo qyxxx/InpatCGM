@@ -2,46 +2,77 @@ server <- function(input, output, session) {
   #### SECTION INPUT DATA ####
   # input data, data cleaning, output data
   # read in the data
-  data <- reactive({
-    req(input$CGMfile)
-    # Convert input$Time_Interval from string to numeric vector
-    time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]]) * 1440
-    # read data with read_CGM_data()
-    cgm_data <- InpatCGM::read_CGM_data(
-      file = input$CGMfile$datapath,
-      ID = input$ID,
-      time = input$Time,
-      glucose = input$Glucose,
-      time_interval = time_interval
-    )
-    # If covariate file is uploaded, merge with CGM data
-    if (!is.null(input$COVfile)) {
-      covariates <- InpatCGM::read_covariate_data(
-        file = input$COVfile$datapath,
-        ID = input$ID,
-        covariate = if (input$specify_covariates && nzchar(input$Covariates_specified)) {
-          input$Covariates_specified
-        } else {
-          NULL  # Indicates using all covariates
+  data_and_error <- eventReactive(input$load_data, {
+    tryCatch({
+      isolate({
+        req(input$CGMfile)
+
+        time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]]) * 1440
+
+        cgm_data <- InpatCGM::read_CGM_data(
+          file = input$CGMfile$datapath,
+          ID = input$ID,
+          time = input$Time,
+          glucose = input$Glucose,
+          time_interval = time_interval
+        )
+
+        if (!is.null(input$COVfile)) {
+          covariates <- InpatCGM::read_covariate_data(
+            file = input$COVfile$datapath,
+            ID = input$ID,
+            covariate = NULL  # <-- load full columns
+          )
+
+          if (input$specify_covariates && nzchar(input$Covariates_specified)) {
+            covariate_vec <- unlist(strsplit(input$Covariates_specified, "[ ,]+"))
+            covariate_vec <- trimws(covariate_vec)
+
+            missing_covariates <- setdiff(covariate_vec, colnames(covariates))
+            if (length(missing_covariates) > 0) {
+              stop(paste0(
+                "Error: The following covariates are missing in the covariate file: ",
+                paste(missing_covariates, collapse = ", "),
+                ". Please check."
+              ))
+            }
+
+            covariates <- covariates[, c(input$ID, covariate_vec), drop = FALSE]
+          }
+
+          cgm_data <- dplyr::inner_join(cgm_data, covariates, by = input$ID)
         }
-      )
-      cgm_data <- dplyr::inner_join(cgm_data, covariates, by = input$ID)
+
+        list(data = cgm_data, error = NULL)
+      })
+    }, error = function(e) {
+      list(data = NULL, error = e$message)
+    })
+  })
+
+  output$error_msg <- renderText({
+    req(data_and_error())
+    if (!is.null(data_and_error()$error)) {
+      data_and_error()$error
+    } else {
+      ""
     }
-
-    return(cgm_data)
   })
 
-  # show the data
+  # Showing the data
   output$data <- DT::renderDataTable({
-    req(data())
-    DT::datatable(data()) |>
-      DT::formatDate(columns = input$Time, method = "toLocaleString")
+    req(data_and_error())
+    validate(
+      need(is.null(data_and_error()$error), data_and_error()$error)
+    )
+    DT::datatable(data_and_error()$data) |>
+      DT::formatDate(columns = isolate(input$Time), method = "toLocaleString")
   })
 
-  # download the data
+  # Downloading the data
   output$downloaddata <- downloadHandler(
     filename = function() {
-      paste("cleaned_data.csv")
+      "cleaned_data.csv"
     },
     content = function(file) {
       write.csv(data(), file, row.names = FALSE)

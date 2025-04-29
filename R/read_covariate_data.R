@@ -9,9 +9,7 @@
 #' @return A data frame containing only the selected ID and covariate columns.
 #' @import dplyr
 #' @export
-read_covariate_data <- function(file,
-                                ID,
-                                covariate = NULL) {
+read_covariate_data <- function(file, ID, covariate = NULL) {
   # Read the data
   data <- read.csv(file, stringsAsFactors = FALSE)
 
@@ -19,12 +17,17 @@ read_covariate_data <- function(file,
   if (!is.null(covariate) && nzchar(covariate)) {
     covariate_vec <- unlist(strsplit(covariate, "[ ,]+"))
     selected_cols <- unique(c(ID, covariate_vec))
-    data <- data |> dplyr::select(dplyr::all_of(selected_cols))
-  } else {
-    # If covariates are not specified, select all columns
-    # (i.e., keep entire dataset)
-    data <- data
+
+    # Only select columns that exist
+    existing_cols <- intersect(selected_cols, colnames(data))
+
+    # Just select the columns that exist (no stop!)
+    data <- data |> dplyr::select(dplyr::all_of(existing_cols))
+
+    # Note: do not stop here anymore
+    # You will validate missing columns separately outside this function
   }
 
   return(data)
 }
+

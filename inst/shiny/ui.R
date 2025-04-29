@@ -7,29 +7,27 @@ ui <- fluidPage(
     tabPanel("Data", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
-                 # load long format CGM data
-                 fileInput("CGMfile", "Choose CGM File (.csv)",
-                           multiple =  FALSE, accept = ".csv"),
-                 textInput('ID', 'Enter column name corresponding to subject ID', value = 'patient_id'),
-                 textInput('Time', 'Enter column name corresponding to timestamp', value = 'date_time'),
-                 textInput('Glucose', 'Enter column name corresponding to glucose values', value = 'Glucose'),
-                 textInput('Time_Interval', 'Enter target time interval upon enrollment in days', value = '1, 4'),
+                 fileInput("CGMfile", "Choose CGM File (.csv)", multiple = FALSE, accept = ".csv"),
+                 textInput('ID', 'Subject ID column', value = 'patient_id'),
+                 textInput('Time', 'Timestamp column', value = 'date_time'),
+                 textInput('Glucose', 'Glucose column', value = 'Glucose'),
+                 textInput('Time_Interval', 'Time interval in days', value = '1,4'),
 
-                 # load wide format covariate data
                  fileInput("COVfile", "Choose Covariates File (.csv)", multiple = FALSE, accept = ".csv"),
-                 checkboxInput("specify_covariates", "Specify covariates of interest?", value = FALSE),
+                 checkboxInput("specify_covariates", "Specify covariates?", value = FALSE),
                  conditionalPanel(
                    condition = "input.specify_covariates == true",
-                   textInput(
-                     inputId = "Covariates_specified",
-                     label = "Covariates (e.g., age, sex, bmi)",
-                     value = ""
-                   )
+                   textInput("Covariates_specified", "Covariates (comma-separated)", value = "")
                  ),
-                 downloadButton("downloaddata", "Download Cleaned Processed Data")
 
+                 actionButton("load_data", "Process Data"),
+                 downloadButton("downloaddata", "Download Processed Data")
                ),
-               mainPanel(DT::dataTableOutput("data"))
+
+               mainPanel(
+                 verbatimTextOutput("error_msg"),
+                 DT::dataTableOutput("data")
+               )
              )),
 
     # Panel - Mean TIR Estimation
