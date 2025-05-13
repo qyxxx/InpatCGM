@@ -143,7 +143,7 @@ ui <- fluidPage(
                  br(),
                  h4("2. Confirm Required Covariates"),
                  helpText("Below is the list of covariates used to train the model. Your uploaded file must include these columns."),
-                 verbatimTextOutput("required_covariates"),
+                 uiOutput("required_covariates_ui"),
 
                  br(),
                  h4("3. Target Glucose Range"),
