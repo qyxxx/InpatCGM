@@ -133,6 +133,39 @@ ui <- fluidPage(
              )
     ),
     # panel - TIR prediction
-    tabPanel("TIR Prediction", fluid = TRUE)
+    tabPanel("TIR Prediction", fluid = TRUE,
+             sidebarLayout(
+               sidebarPanel(
+                 h4("1. Upload Covariate File"),
+                 fileInput("pred_covariate_file", "Choose Prediction Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
+                 actionButton("check_pred_covariate", "Check Uploaded File"),
+
+                 br(),
+                 h4("2. Confirm Required Covariates"),
+                 helpText("Below is the list of covariates used to train the model. Your uploaded file must include these columns."),
+                 verbatimTextOutput("required_covariates"),
+
+                 br(),
+                 h4("3. Make Prediction"),
+                 actionButton("predict_TIR", "Predict TIR"),
+                 br(), br(),
+                 downloadButton("download_prediction", "Download Prediction Results")
+               ),
+
+               mainPanel(
+                 h4("Uploaded Covariate Matrix Preview"),
+                 DT::dataTableOutput("pred_covariate_preview"),
+
+                 br(),
+                 h4("Prediction Results"),
+                 DT::dataTableOutput("TIR_prediction_result"),
+
+                 br(),
+                 h4("Top 5 Important Variables (from Training Data)"),
+                 helpText("These variables are ranked based on their importance in the random forest model."),
+                 tableOutput("top_important_vars")
+               )
+             )
+    )
   )
 )
