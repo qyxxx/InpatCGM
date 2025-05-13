@@ -146,8 +146,13 @@ ui <- fluidPage(
                  verbatimTextOutput("required_covariates"),
 
                  br(),
-                 h4("3. Make Prediction"),
+                 h4("3. Target Glucose Range"),
+                 textInput("pred_target_range", "Enter Glucose Range (e.g., 70,180)", value = "70,180"),
+
+                 br(),
+                 h4("4. Make Prediction"),
                  actionButton("predict_TIR", "Predict TIR"),
+
                  br(), br(),
                  downloadButton("download_prediction", "Download Prediction Results")
                ),
