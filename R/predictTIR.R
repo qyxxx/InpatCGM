@@ -21,8 +21,8 @@
 #'   \item{`importance`}{A data frame of variable importance scores from the random forest model.}
 #' }
 #'
+#' @importFrom grf regression_forest variable_importance
 #' @importFrom dplyr group_by summarise slice ungroup left_join select arrange desc
-#' @importFrom grf regression_forest variable_importance predict
 #' @examples
 #' \dontrun{
 #' result <- predictTIR(train_data = training_df,

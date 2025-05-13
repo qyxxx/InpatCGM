@@ -32,6 +32,7 @@ where \eqn{\widehat{D}} is the vector of differences in TIR estimates relative t
 and \eqn{\widehat{\Sigma}} is the covariance matrix of the bootstrapped differences.
 }
 \examples{
+\dontrun{
 set.seed(123)
 est <- c(0.75, 0.68, 0.72)
 boot_TIR <- list(
@@ -40,5 +41,5 @@ boot_TIR <- list(
   rnorm(100, 0.72, 0.025)
 )
 wald_test_TIR(est, boot_TIR)
-
+}
 }

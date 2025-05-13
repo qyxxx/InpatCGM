@@ -52,6 +52,7 @@ including subject ID, follow-up duration, evaluation window, CGM activity percen
 average glucose, glucose management indicator (GMI), and coefficient of variation (CV).
 }
 \examples{
+\dontrun{
 # Example dataset
 data <- data.frame(
   id = rep(1, 100),
@@ -61,5 +62,5 @@ data <- data.frame(
 
 # Compute AGP metrics
 AGP_metrics(data, ID = "id", time = "time", glucose = "glucose", time_interval = c(0, 1440))
-
+}
 }

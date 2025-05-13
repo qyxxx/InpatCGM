@@ -26,6 +26,7 @@ into three categories: "Low", "Target", and "High". The percentage of time spent
 each range is computed for each subject.
 }
 \examples{
+\dontrun{
 # Example dataset
 df <- data.frame(
   patient_id = rep(1:2, each = 100),
@@ -35,5 +36,5 @@ df <- data.frame(
 
 # Plot TIR
 AGP_plotTIR(df, ID = "patient_id", time = "date_time", glucose = "Glucose", target_glucose = c(70, 180))
-
+}
 }

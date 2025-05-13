@@ -4,18 +4,14 @@
 \alias{read_covariate_data}
 \title{Read Covariate Data from File}
 \usage{
-read_covariate_data(
-  file = input$COVfile$datapath,
-  ID = input$ID,
-  covariate = input$Covariates_specified
-)
+read_covariate_data(file, ID, covariate = NULL)
 }
 \arguments{
 \item{file}{Path to the input CSV file (default: `input$COVfile$datapath`).}
 
 \item{ID}{Name of the ID column (default: `input$ID`).}
 
-\item{covariate}{Comma-separated string of covariates to select (default: `input$Covariates_specified`).}
+\item{covariate}{Comma-separated string of covariates to select (default: NULL, use all covariates).}
 }
 \value{
 A data frame containing only the selected ID and covariate columns.
