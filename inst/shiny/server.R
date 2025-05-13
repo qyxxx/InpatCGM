@@ -107,7 +107,7 @@ server <- function(input, output, session) {
       "cleaned_data.csv"
     },
     content = function(file) {
-      write.csv(data(), file, row.names = FALSE)
+      write.csv(data_and_error()$data, file, row.names = FALSE)
     }
   )
 
@@ -497,5 +497,107 @@ server <- function(input, output, session) {
   #     render(tempReport, output_file = file)
   #   }
   # )
+
+  #####Section TIR Prediction
+  # Reactive storage for training covariate names
+  training_covariates <- reactiveVal(NULL)
+
+  # Extract covariate column names after loading data
+  observeEvent(input$load_data, {
+    dat <- data_and_error()$data
+    req(dat)
+
+    # Define covariates by excluding known non-covariate columns
+    excluded_cols <- c(input$ID, input$Time, input$Glucose, "minute_enrollment", "day_enrollment")
+    covariate_cols <- setdiff(colnames(dat), excluded_cols)
+
+    training_covariates(covariate_cols)
+  })
+
+  # Show required covariates in UI
+  # output$required_covariates <- renderPrint({
+  #   req(training_covariates())
+  #   training_covariates()
+  # })
+  output$required_covariates_ui <- renderUI({
+    req(training_covariates())
+    textAreaInput(
+      inputId = "covariate_list_display",
+      label = NULL,
+      value = paste(training_covariates(), collapse = ", "),
+      rows = min(8, length(training_covariates())),
+      width = "100%"
+    )
+  })
+
+  # Reactive storage for uploaded test covariate matrix
+  pred_covariate_data <- reactiveVal(NULL)
+
+  # Load covariate matrix for prediction
+  observeEvent(input$check_pred_covariate, {
+    req(input$pred_covariate_file)
+    df <- read.csv(input$pred_covariate_file$datapath, stringsAsFactors = FALSE)
+    pred_covariate_data(df)
+  })
+
+  # Preview uploaded covariate matrix
+  output$pred_covariate_preview <- DT::renderDataTable({
+    req(pred_covariate_data())
+    DT::datatable(pred_covariate_data(), options = list(pageLength = 5))
+  })
+
+  # Make prediction using predictTIR()
+  predicted_TIR <- eventReactive(input$predict_TIR, {
+    req(pred_covariate_data(), data(), training_covariates())
+
+    # Parse glucose range input
+    range_vals <- as.numeric(strsplit(input$pred_target_range, ",")[[1]])
+    lower <- if (!is.na(range_vals[1])) range_vals[1] else 70
+    upper <- if (!is.na(range_vals[2])) range_vals[2] else 180
+
+    # warn user if parsing seems invalid
+    if (length(range_vals) != 2 || any(is.na(range_vals))) {
+      showNotification("Invalid glucose range. Please enter two numbers like 70,180", type = "error")
+      return(NULL)
+    }
+
+    tryCatch({
+      InpatCGM::predictTIR(
+        train_data = data_and_error()$data,
+        test_covariates = pred_covariate_data(),
+        id_col = input$ID,
+        glucose_col = input$Glucose,
+        covariates = training_covariates(),
+        lower = lower,
+        upper = upper
+      )
+    }, error = function(e) {
+      showNotification(paste("Prediction failed:", e$message), type = "error")
+      NULL
+    })
+  })
+
+  # Render predicted TIR results in main panel
+  output$TIR_prediction_result <- DT::renderDataTable({
+    req(predicted_TIR())
+    DT::datatable(predicted_TIR()$predictions, options = list(pageLength = 5))
+  })
+
+  # Render top variable importance table
+  output$top_important_vars <- renderTable({
+    req(predicted_TIR())
+    head(predicted_TIR()$importance, 5)
+  })
+
+  # Download Results
+  output$download_prediction <- downloadHandler(
+    filename = function() {
+      paste0("predicted_TIR_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      req(predicted_TIR())
+      write.csv(predicted_TIR()$predictions, file, row.names = FALSE)
+    }
+  )
 
 }
