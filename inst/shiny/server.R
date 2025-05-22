@@ -152,13 +152,14 @@ server <- function(input, output, session) {
 
   # Compute TIR
   TIR_result <- eventReactive(input$computeTIR, {
-    req(data())
+    dat <- data_and_error()$data
+    req(dat)
+    # req(data())
+    # dat <- data()
 
     estTIR_range <- as.numeric(strsplit(input$estTIR_range, ",")[[1]])
     boot_value <- if (input$use_bootstrap) input$boot_num else NULL
     selected_model <- if (input$model == "NULL") 'NULL' else input$model
-
-    dat <- data()
 
     if (input$stratify) {
       strat_var <- input$strat_var
@@ -329,11 +330,11 @@ server <- function(input, output, session) {
     cat("  p-value:", format.pval(res$test$p.value, digits = 4), "\n")
   })
 
-  #### SECTION AGP ####
+  #### SECTION IGP ####
   ## INPUT - select ID, selection target glucose range, selection smoothing kernel for the plot
   # input subject ID
   output$AGP_Subject <- renderUI({
-    data = data()
+    data = data_and_error()$data
     # default subject is the first subject in the data
     subject = data[1, input$ID]
     textInput('AGP_Subject', 'Enter Subject ID', value = subject)
@@ -360,7 +361,7 @@ server <- function(input, output, session) {
   # subset AGP data -- by subject id
   AGP_data <- reactive({
     req(input$AGP_Subject)  # Ensure input$AGP_Subject is available
-    data <- data()  # Store reactive data only once
+    data <- data_and_error()$data  # Store reactive data only once
 
     # Validate that input$AGP_Subject exists in the dataset
     validate(
