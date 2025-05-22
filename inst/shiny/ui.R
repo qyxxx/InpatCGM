@@ -158,21 +158,26 @@ ui <- fluidPage(
     tabPanel("TIR Prediction", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
-                 h4("1. Upload Covariate File"),
-                 fileInput("pred_covariate_file", "Choose Prediction Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
-                 actionButton("check_pred_covariate", "Check Uploaded File"),
 
-                 br(),
-                 h4("2. Confirm Required Covariates"),
-                 helpText("Below is the list of covariates used to train the model. Your uploaded file must include these columns."),
+                 tags$h4("1. Select Covariates for Model Training"),
+                 helpText("Select covariates from your cleaned dataset to use in training."),
+                 uiOutput("training_covariate_selector"),
+
+                 actionButton("train_model", "Train Model"),
+                 br(), br(),
+
+                 tags$h4("2. Confirm Required Covariates"),
+                 helpText("The trained model requires the following covariates:"),
                  uiOutput("required_covariates_ui"),
 
-                 br(),
-                 h4("3. Target Glucose Range"),
-                 textInput("pred_target_range", "Enter Glucose Range (e.g., 70,180)", value = "70,180"),
+                 tags$h4("3. Upload Covariate File for Prediction"),
+                 fileInput("pred_covariate_file", "Upload Prediction Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
+                 actionButton("check_pred_covariate", "Preview Uploaded File"),
 
-                 br(),
-                 h4("4. Make Prediction"),
+                 tags$h4("4. Glucose Range"),
+                 textInput("pred_target_range", "Target Glucose Range (e.g., 70,180)", value = "70,180"),
+
+                 tags$h4("5. Predict"),
                  actionButton("predict_TIR", "Predict TIR"),
 
                  br(), br(),
@@ -180,19 +185,19 @@ ui <- fluidPage(
                ),
 
                mainPanel(
-                 h4("Uploaded Covariate Matrix Preview"),
+                 tags$h4("Preview: Uploaded Prediction File"),
                  DT::dataTableOutput("pred_covariate_preview"),
 
-                 br(),
-                 h4("Prediction Results"),
+                 tags$h4("Prediction Results"),
                  DT::dataTableOutput("TIR_prediction_result"),
 
-                 br(),
-                 h4("Top 5 Important Variables (from Training Data)"),
-                 helpText("These variables are ranked based on their importance in the random forest model."),
+                 tags$h4("Top 5 Important Variables"),
+                 helpText("Based on the trained random forest model."),
                  tableOutput("top_important_vars")
                )
              )
     )
+
+
   )
 )

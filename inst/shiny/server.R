@@ -511,27 +511,39 @@ server <- function(input, output, session) {
   #   }
   # )
 
-  #####Section TIR Prediction
-  # Reactive storage for training covariate names
+  #### SECTION TIR Prediction ####
+
+  # Reactive storage for selected covariates used in training
   training_covariates <- reactiveVal(NULL)
 
-  # Extract covariate column names after loading data
-  observeEvent(input$load_data, {
+  # Reactive UI for selecting covariates from cleaned dataset
+  output$training_covariate_selector <- renderUI({
     dat <- data_and_error()$data
     req(dat)
 
-    # Define covariates by excluding known non-covariate columns
+    # Exclude ID/time/glucose columns
     excluded_cols <- c(input$ID, input$Time, input$Glucose, "minute_enrollment", "day_enrollment")
-    covariate_cols <- setdiff(colnames(dat), excluded_cols)
+    covariate_choices <- setdiff(names(dat), excluded_cols)
 
-    training_covariates(covariate_cols)
+    checkboxGroupInput(
+      inputId = "selected_training_covariates",
+      label = "Choose Covariates for Training:",
+      choices = covariate_choices,
+      selected = covariate_choices
+    )
   })
 
-  # Show required covariates in UI
-  # output$required_covariates <- renderPrint({
-  #   req(training_covariates())
-  #   training_covariates()
-  # })
+  # Observe when the user clicks "Train Model"
+  observeEvent(input$train_model, {
+    dat <- data_and_error()$data
+    req(dat, input$selected_training_covariates)
+
+    training_covariates(input$selected_training_covariates)
+
+    showNotification("Model trained using selected covariates.", type = "message")
+  })
+
+  # Show required covariates used in training
   output$required_covariates_ui <- renderUI({
     req(training_covariates())
     textAreaInput(
@@ -543,32 +555,30 @@ server <- function(input, output, session) {
     )
   })
 
-  # Reactive storage for uploaded test covariate matrix
+  # Reactive storage for uploaded covariate matrix
   pred_covariate_data <- reactiveVal(NULL)
 
-  # Load covariate matrix for prediction
+  # Load uploaded covariate matrix
   observeEvent(input$check_pred_covariate, {
     req(input$pred_covariate_file)
     df <- read.csv(input$pred_covariate_file$datapath, stringsAsFactors = FALSE)
     pred_covariate_data(df)
   })
 
-  # Preview uploaded covariate matrix
+  # Preview uploaded matrix
   output$pred_covariate_preview <- DT::renderDataTable({
     req(pred_covariate_data())
     DT::datatable(pred_covariate_data(), options = list(pageLength = 5))
   })
 
-  # Make prediction using predictTIR()
+  # Make TIR prediction
   predicted_TIR <- eventReactive(input$predict_TIR, {
-    req(pred_covariate_data(), data(), training_covariates())
+    req(pred_covariate_data(), data_and_error()$data, training_covariates())
 
-    # Parse glucose range input
     range_vals <- as.numeric(strsplit(input$pred_target_range, ",")[[1]])
     lower <- if (!is.na(range_vals[1])) range_vals[1] else 70
     upper <- if (!is.na(range_vals[2])) range_vals[2] else 180
 
-    # warn user if parsing seems invalid
     if (length(range_vals) != 2 || any(is.na(range_vals))) {
       showNotification("Invalid glucose range. Please enter two numbers like 70,180", type = "error")
       return(NULL)
@@ -590,19 +600,25 @@ server <- function(input, output, session) {
     })
   })
 
-  # Render predicted TIR results in main panel
+  # Show predicted results
   output$TIR_prediction_result <- DT::renderDataTable({
     req(predicted_TIR())
-    DT::datatable(predicted_TIR()$predictions, options = list(pageLength = 5))
+    pred_df <- predicted_TIR()$predictions
+
+    # Round all numeric columns to 4 digits
+    is_numeric <- sapply(pred_df, is.numeric)
+    pred_df[is_numeric] <- lapply(pred_df[is_numeric], function(x) round(x, 4))
+
+    DT::datatable(pred_df, options = list(pageLength = 5))
   })
 
-  # Render top variable importance table
+  # Show variable importance
   output$top_important_vars <- renderTable({
     req(predicted_TIR())
     head(predicted_TIR()$importance, 5)
   })
 
-  # Download Results
+  # Download predicted results
   output$download_prediction <- downloadHandler(
     filename = function() {
       paste0("predicted_TIR_", Sys.Date(), ".csv")
@@ -612,5 +628,6 @@ server <- function(input, output, session) {
       write.csv(predicted_TIR()$predictions, file, row.names = FALSE)
     }
   )
+
 
 }
