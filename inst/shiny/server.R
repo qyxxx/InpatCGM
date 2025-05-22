@@ -347,7 +347,7 @@ server <- function(input, output, session) {
 
   # input smoothing coefficient for plot
   output$AGP_SmoothingCoefficient <- renderUI({
-    numericInput('AGP_SmoothingCoefficient', 'Enter Smoothing Coefficient for Plot', value = '0.3')
+    numericInput('AGP_SmoothingCoefficient', 'Smoothing Coefficient (e.g., 0.3)', value = 0.3, min = 0.01, max = 1, step = 0.01)
   })
 
   # Reactive expression to safely parse AGP target glucose range

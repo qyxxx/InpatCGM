@@ -122,31 +122,35 @@ ui <- fluidPage(
              )
     ),
 
-    # panel - individual metrics - AGP
+    # panel - individual metrics - IGP
     tabPanel("IGP", fluid = TRUE,
-             helpText("The inpatient glucose profile (IGP)"),
+             helpText("The inpatient glucose profile (IGP) shows summary and daily glucose trends for selected patients."),
+
              sidebarLayout(
                sidebarPanel(
+                 tags$h4("1. Select Inputs"),
                  uiOutput("AGP_Subject"),
                  uiOutput("AGP_TargetGlucoseRange"),
                  uiOutput("AGP_SmoothingCoefficient"),
-                 downloadButton(outputId = "pdfAGP", label = "pdf"),
-                 downloadButton(outputId = "pngAGP", label = "png")
-                 # downloadButton(outputId = "htmlAGP", label = "html")
+                 helpText("Adjust the smoothing coefficient to control curve smoothness in the plots."),
+
+                 tags$h4("2. Export Plots"),
+                 downloadButton(outputId = "pdfAGP", label = "Download PDF"),
+                 downloadButton(outputId = "pngAGP", label = "Download PNG")
                ),
+
                mainPanel(
-                 fluidRow(
-                   column(6, wellPanel("Percent CGM Readings in Ranges")),
-                   column(6, wellPanel("CGM Statistics"))
-                 ),
-                 fluidRow(
-                   column(6, plotOutput("AGP_plotTIR")),
-                   column(6, DT::DTOutput("AGP_Statistics"))
-                 ),
-                 fluidRow(column(12, wellPanel("Inpatient Glucose Profile (IGP)"))),
-                 fluidRow(column(12,  plotOutput("AGP_plotDayAvg"))),
-                 fluidRow(column(12, wellPanel("Daily Glucose Profiles"))),
-                 fluidRow(column(12, plotOutput("AGP_plotDaily")))
+                 tags$h4("Percent of CGM Readings in Glucose Ranges"),
+                 plotOutput("AGP_plotTIR"),
+
+                 tags$h4("Summary CGM Statistics"),
+                 DT::DTOutput("AGP_Statistics"),
+
+                 tags$h4("Average Glucose Profile Across Days"),
+                 plotOutput("AGP_plotDayAvg"),
+
+                 tags$h4("Daily Glucose Trajectories"),
+                 plotOutput("AGP_plotDaily")
                )
              )
     ),
