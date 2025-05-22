@@ -34,29 +34,39 @@ server <- function(input, output, session) {
   data_and_error <- eventReactive(input$load_data, {
     tryCatch({
       isolate({
-        req(input$CGMfile)
+        # Required inputs
+        req(input$CGMfile, input$ID, input$Time, input$Glucose)
+        id_col <- trimws(input$ID)
+        time_col <- trimws(input$Time)
+        glucose_col <- trimws(input$Glucose)
 
-        time_interval <- as.numeric(strsplit(input$Time_Interval, ",")[[1]]) * 1440
+        # Handle time interval
+        time_interval_input <- trimws(input$Time_Interval)
+        time_interval <- as.numeric(strsplit(time_interval_input, ",")[[1]]) * 1440
+        if (length(time_interval) != 2 || any(is.na(time_interval))) {
+          stop("Invalid time interval. Use format like '1,4'.")
+        }
 
+        # Read CGM data
         cgm_data <- InpatCGM::read_CGM_data(
           file = input$CGMfile$datapath,
-          ID = input$ID,
-          time = input$Time,
-          glucose = input$Glucose,
+          ID = id_col,
+          time = time_col,
+          glucose = glucose_col,
           time_interval = time_interval
         )
 
-        if (!is.null(input$COVfile)) {
+        # Read covariates if provided
+        if (!is.null(input$COVfile) && nzchar(input$COV_ID)) {
           covariates <- InpatCGM::read_covariate_data(
             file = input$COVfile$datapath,
-            ID = input$ID,
-            covariate = NULL  # <-- load full columns
+            ID = input$COV_ID,
+            covariate = NULL  # Load all columns initially
           )
 
-          if (input$specify_covariates && nzchar(input$Covariates_specified)) {
-            covariate_vec <- unlist(strsplit(input$Covariates_specified, "[ ,]+"))
-            covariate_vec <- trimws(covariate_vec)
-
+          # Optional: restrict covariate columns to specified subset
+          if (isTRUE(input$specify_covariates) && nzchar(input$Covariates_specified)) {
+            covariate_vec <- trimws(unlist(strsplit(input$Covariates_specified, "[ ,]+")))
             missing_covariates <- setdiff(covariate_vec, colnames(covariates))
             if (length(missing_covariates) > 0) {
               stop(paste0(
@@ -65,13 +75,13 @@ server <- function(input, output, session) {
                 ". Please check."
               ))
             }
-
-            covariates <- covariates[, c(input$ID, covariate_vec), drop = FALSE]
+            covariates <- covariates[, c(input$COV_ID, covariate_vec), drop = FALSE]
           }
 
+          # Merge CGM and covariates by input$COV_ID and input$ID
           cgm_data <- dplyr::inner_join(
             cgm_data, covariates,
-            by = setNames(input$COV_ID, input$ID)
+            by = setNames(trimws(input$COV_ID), id_col)
           )
         }
 
@@ -98,7 +108,9 @@ server <- function(input, output, session) {
       need(is.null(data_and_error()$error), data_and_error()$error)
     )
     DT::datatable(data_and_error()$data) |>
-      DT::formatDate(columns = isolate(input$Time), method = "toLocaleString")
+    #DT::formatDate(columns = isolate(input$Time), method = "toLocaleString")
+    DT::formatDate(columns = trimws(input$Time), method = "toLocaleString")
+
   })
 
   # Downloading the data

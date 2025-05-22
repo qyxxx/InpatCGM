@@ -14,42 +14,52 @@ ui <- fluidPage(
                      "⚠️ Important: Please do not upload sensitive or personally identifiable information (PII)."
                    )
                  ),
-                 # 1. CGM file
+
+                 # Section 1: Upload CGM File
+                 tags$h4("1. Upload CGM File"),
                  fileInput("CGMfile", "Choose CGM File (.csv)", multiple = FALSE, accept = ".csv"),
-                 actionButton("check_CGMfile", "Check CGM File"),
+                 actionButton("check_CGMfile", "Preview CGM Data"),
 
-                 # 2. CGM columns
-                 textInput('ID', 'Subject ID column', value = 'patient_id'),
-                 textInput('Time', 'Timestamp column', value = 'date_time'),
-                 textInput('Glucose', 'Glucose column', value = 'Glucose'),
-                 textInput('Time_Interval', 'Time interval in days', value = '1,4'),
+                 # Section 2: Specify CGM Column Names
+                 tags$h4("2. Select CGM Column Names"),
+                 textInput('ID', 'Subject ID Column', placeholder = "e.g., patient_id"),
+                 textInput('Time', 'Timestamp Column', placeholder = "e.g., date_time"),
+                 textInput('Glucose', 'Glucose Value Column', placeholder = "e.g., Glucose"),
+                 textInput('Time_Interval', 'Time Interval in Days', placeholder = "e.g., 1,4"),
+                 helpText("Make sure the column names match those in your uploaded CGM file."),
 
-                 # 3. Covariate file (optional)
+                 # Section 3: Optional Covariate File
+                 tags$h4("3. (Optional) Upload Covariate File"),
                  fileInput("COVfile", "Choose Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
-                 actionButton("check_COVfile", "Check Covariate File"),
-                 # 3b. Covariate ID Column
-                 textInput('COV_ID', 'Covariate File: ID column', value = 'patient_id'),
+                 actionButton("check_COVfile", "Preview Covariate File"),
+                 textInput('COV_ID', 'Matching ID Column in Covariate File', placeholder = "e.g., patient_id"),
+                 helpText("Must match the subject ID column in the CGM file for merging."),
 
-                 # 4. Covariate columns (optional)
-                 checkboxInput("specify_covariates", "Specify covariates?", value = FALSE),
+                 # Section 4: Optional Column Selection for Output
+                 tags$h4("4. (Optional) Limit Columns in Cleaned Dataset"),
+                 checkboxInput("specify_covariates", "Select specific covariates to include in output?", value = FALSE),
                  conditionalPanel(
                    condition = "input.specify_covariates == true",
-                   textInput("Covariates_specified", "Covariates (comma-separated)", value = "")
+                   textInput("Covariates_specified", "Covariate Columns (comma-separated)", placeholder = "e.g., age, sex, bmi"),
+                   helpText("This controls which columns appear in the merged dataset output. Futher analysis are based on this merged dataset.")
                  ),
 
-                 # 5. Load and download
-                 actionButton("load_data", "Load Data"),
+                 # Section 5: Load and Download
+                 tags$h4("5. Finalize and Export"),
+                 actionButton("load_data", "Load and Process Data"),
                  downloadButton("downloaddata", "Download Cleaned Data")
                ),
 
                mainPanel(
-                 verbatimTextOutput("error_msg"),  # for showing errors
-                 h4("File Preview"),
+                 verbatimTextOutput("error_msg"),
+                 h4("Preview: Uploaded CGM File"),
                  DT::dataTableOutput("file_preview"),
-                 h4("Processed CGM + Covariate Data"),
+
+                 h4("Preview: Merged CGM + Covariate Data"),
                  DT::dataTableOutput("data")
                )
-             )),
+             )
+    ),
 
     # Panel - Mean TIR Estimation
     tabPanel("Mean TIR Estimation", fluid = TRUE,
