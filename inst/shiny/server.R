@@ -124,13 +124,15 @@ server <- function(input, output, session) {
   )
 
   #### SECTION meanTIR Estimation ####
-  observe({
-    req(data())
 
-    if (!is.null(input$COVfile)) {
+  # Update stratification choices when covariate file is uploaded
+  observe({
+    req(data_and_error()$data)
+
+    if (!is.null(input$COVfile) && nzchar(input$COV_ID)) {
       covariate_data <- InpatCGM::read_covariate_data(
         file = input$COVfile$datapath,
-        ID = input$ID,
+        ID = input$COV_ID,
         covariate = if (input$specify_covariates && nzchar(input$Covariates_specified)) {
           input$Covariates_specified
         } else {
@@ -138,9 +140,9 @@ server <- function(input, output, session) {
         }
       )
 
-      # Exclude ID and select covariates with 1 < unique levels < 10
+      # Select categorical variables with between 2 and 9 levels (for stratification)
       covariate_choices <- covariate_data |>
-        dplyr::select(-all_of(input$ID)) |>
+        dplyr::select(-all_of(input$COV_ID)) |>
         dplyr::select(where(~ dplyr::n_distinct(.) > 1 & dplyr::n_distinct(.) < 10)) |>
         names()
 
@@ -150,33 +152,34 @@ server <- function(input, output, session) {
     }
   })
 
-  # Compute TIR
+  # Compute TIR (Time in Range) estimation
   TIR_result <- eventReactive(input$computeTIR, {
     dat <- data_and_error()$data
     req(dat)
-    # req(data())
-    # dat <- data()
 
     estTIR_range <- as.numeric(strsplit(input$estTIR_range, ",")[[1]])
     boot_value <- if (input$use_bootstrap) input$boot_num else NULL
+
+    # Clarify model choices:
+    # "NULL" = non-informative missingness
+    # "cox" = follow-up modeled by Cox proportional hazards
     selected_model <- if (input$model == "NULL") 'NULL' else input$model
 
     if (input$stratify) {
       strat_var <- input$strat_var
       req(strat_var)
 
-      # Split by groups
       groups <- unique(dat[[strat_var]])
       results <- lapply(groups, function(g) {
         group_data <- dat[dat[[strat_var]] == g, ]
 
-        # Drop rows with missing glucose
         group_data <- group_data[!is.na(group_data[[input$Glucose]]), ]
-        # Ensure required columns exist
         required_cols <- c(input$ID, input$Glucose, "minute_enrollment")
+
         if (nrow(group_data) == 0) {
           return(list(group = g, result = NA, error = "Group has 0 rows after filtering."))
         }
+
         if (!all(required_cols %in% names(group_data))) {
           return(list(group = g, result = NA, error = paste("Missing required columns:",
                                                             paste(setdiff(required_cols, names(group_data)), collapse = ", "))))
@@ -187,7 +190,7 @@ server <- function(input, output, session) {
             data = group_data,
             method = input$method,
             model = selected_model,
-            time = c(-100000000, 100000000),
+            time = c(-1e8, 1e8),
             range = estTIR_range,
             boot = boot_value,
             id = input$ID,
@@ -197,7 +200,6 @@ server <- function(input, output, session) {
           )
         }, error = function(e) e)
 
-        # list(group = g, result = est)
         if (inherits(est, "error")) {
           return(list(group = g, result = NA, error = est$message))
         }
@@ -205,32 +207,26 @@ server <- function(input, output, session) {
         return(list(group = g, result = est, error = NULL))
       })
 
-      # === Wald test ===
+      # Optional: Perform Wald-type test for equality of group TIRs
+      test <- NULL
       if (input$use_bootstrap) {
         valid_results <- Filter(function(r) !is.null(r$result) && !is.null(r$result$boot_TIR), results)
-
         if (length(valid_results) == length(results)) {
           estimates <- sapply(valid_results, function(r) r$result$est)
           boot_TIR_list <- lapply(valid_results, function(r) r$result$boot_TIR)
           test <- InpatCGM::wald_test_TIR(estimates, boot_TIR_list)
-        } else {
-          test <- NULL
         }
-      } else {
-        test <- NULL
       }
 
       return(list(results = results, test = test))
 
-      # return(list(results = results))
-      #
     } else {
-      # Non-stratified
+      # Unstratified analysis
       est <- InpatCGM::estTIR(
         data = dat,
         method = input$method,
         model = selected_model,
-        time = c(-100000000, 100000000),
+        time = c(-1e8, 1e8),
         range = estTIR_range,
         boot = boot_value,
         id = input$ID,
@@ -242,20 +238,21 @@ server <- function(input, output, session) {
     }
   })
 
+  # Summary TIR table
   output$TIR_table <- renderTable({
     res <- TIR_result()
 
     if (input$stratify) {
       results <- lapply(res$results, function(r) {
-        if (!is.null(r$error)) return(NULL)  # Skip groups with error
+        if (!is.null(r$error)) return(NULL)
 
         if (input$use_bootstrap && !is.null(r$result$`std err`)) {
           ci_str <- paste0("(", round(r$result$`CI 025`, 3), ", ", round(r$result$`CI 975`, 3), ")")
           data.frame(
             Group = r$group,
             TIR = round(r$result$est, 3),
-            'Standard Error' = round(r$result$`std err`, 3),
-            '95% Confidence Interval' = ci_str,
+            `Standard Error` = round(r$result$`std err`, 3),
+            `95% Confidence Interval` = ci_str,
             check.names = FALSE,
             stringsAsFactors = FALSE
           )
@@ -269,9 +266,7 @@ server <- function(input, output, session) {
         }
       })
 
-      df <- do.call(rbind, results)
-      return(df)
-
+      return(do.call(rbind, results))
     } else {
       r <- res
       if (input$use_bootstrap && !is.null(r$`std err`)) {
@@ -279,8 +274,8 @@ server <- function(input, output, session) {
         data.frame(
           Group = "All",
           TIR = round(r$est, 3),
-          'Standard Error' = round(r$`std err`, 3),
-          '95% Confidence Interval' = ci_str,
+          `Standard Error` = round(r$`std err`, 3),
+          `95% Confidence Interval` = ci_str,
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
@@ -295,8 +290,7 @@ server <- function(input, output, session) {
     }
   }, digits = 3)
 
-
-  # print error message, if error exists
+  # Show error messages from stratified analysis
   output$TIR_errors <- renderPrint({
     res <- TIR_result()
     if (input$stratify) {
@@ -309,25 +303,31 @@ server <- function(input, output, session) {
     }
   })
 
-  # show results about hypothesis testing: same mean TIR among groups
-
+  # Print hypothesis test for group comparison
   output$TIR_test <- renderPrint({
     res <- TIR_result()
-
-    # Only show test result if stratified + bootstrapped + test exists
-    if (!isTRUE(input$stratify) || !isTRUE(input$use_bootstrap)) {
-      return(invisible(NULL))
-    }
-
-    if (is.null(res$test)) {
-      return(invisible(NULL))
-    }
+    if (!isTRUE(input$stratify) || !isTRUE(input$use_bootstrap)) return(invisible(NULL))
+    if (is.null(res$test)) return(invisible(NULL))
 
     cat("Wald-type test for equality of mean TIRs across groups:\n")
     cat("  Null hypothesis: μ₁ = μ₂ = ... = μₖ\n")
     cat("  Test statistic:", round(res$test$statistic, 3), "\n")
     cat("  Degrees of freedom:", res$test$df, "\n")
     cat("  p-value:", format.pval(res$test$p.value, digits = 4), "\n")
+  })
+
+  # (Optional) Description of selected methods
+  output$TIR_description <- renderUI({
+    method_text <- switch(input$method,
+                          "naive" = "Naive: Ignores missing data; estimates TIR from complete cases only.",
+                          "proposed" = "Proposed: Uses a probabilistic model accounting for missingness (Yu, 2024)."
+    )
+    model_text <- switch(input$model,
+                         "NULL" = "Model: Assumes missingness is non-informative.",
+                         "cox" = "Model: Models follow-up duration using Cox regression."
+    )
+    HTML(paste("<strong>Estimation Method:</strong>", method_text, "<br/>",
+               "<strong>Missingness Model:</strong>", model_text))
   })
 
   #### SECTION IGP ####

@@ -65,54 +65,62 @@ ui <- fluidPage(
     tabPanel("Mean TIR Estimation", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
-                 # Choose estimation method
-                 selectInput("method", "Select TIR Estimation Method", choices = c("naive", "proposed"), selected = "proposed"),
+                 tags$h4("1. Choose Estimation Method"),
+                 selectInput("method", "Estimation Method",
+                             choices = c("naive", "proposed"), selected = "proposed"),
+                 helpText("naive = ignores missing data; proposed = probabilistic model (Yu, 2024)."),
 
-                 # Show Bootstrap option for both methods
+                 tags$h4("2. Bootstrap Settings"),
+                 checkboxInput("use_bootstrap", "Use Bootstrap?", value = FALSE),
                  conditionalPanel(
-                   condition = "input.method == 'naive' || input.method == 'proposed'",
-                   checkboxInput("use_bootstrap", "Use Bootstrap?", value = FALSE),
-                   conditionalPanel(
-                     condition = "input.use_bootstrap == true",
-                     numericInput("boot_num", "Number of Bootstraps", value = 20, min = 10)
-                   )
+                   condition = "input.use_bootstrap == true",
+                   numericInput("boot_num", "Number of Bootstrap Replicates", value = 20, min = 10),
+                   helpText("Used to calculate standard error and confidence intervals.")
                  ),
 
-                 # Model selection (only if method is "proposed")
+                 tags$h4("3. Missingness Modeling (proposed only)"),
                  conditionalPanel(
                    condition = "input.method == 'proposed'",
-                   selectInput("model", "Select Follow-up Duration Model", choices = c("NULL", "cox"), selected = "NULL"),
+                   selectInput("model", "Follow-up Duration Model",
+                               choices = c("NULL", "cox"), selected = "NULL"),
+                   helpText("NULL = assumes non-informative missingness; cox = models follow-up time via Cox regression."),
 
-                   # If "cox" model is selected, specify formula
                    conditionalPanel(
                      condition = "input.model == 'cox'",
-                     textInput("cox_formula", "Enter Cox Model Formula (e.g., age + sex + bmi)", value = "")
+                     textInput("cox_formula", "Cox Model Formula (e.g., age + sex + bmi)", value = ""),
+                     helpText("Specify covariates used to model dropout.")
                    )
                  ),
 
-                 # Range selection
-                 textInput("estTIR_range", "Specify Glucose Range (e.g., 70, 180)", value = "70, 180"),
+                 tags$h4("4. Glucose Range for TIR"),
+                 textInput("estTIR_range", "Target Glucose Range (mg/dL)", value = "70, 180"),
+                 helpText("Specify lower and upper bounds, comma-separated."),
 
-                 # stratify option
-                 # Stratify option
+                 tags$h4("5. Stratified Estimation (Optional)"),
                  checkboxInput("stratify", "Stratify by a variable?", value = FALSE),
-
-                 # Show only if stratify is TRUE
                  conditionalPanel(
                    condition = "input.stratify == true",
-                   selectInput("strat_var", "Select Stratification Variable", choices = NULL)
+                   selectInput("strat_var", "Stratification Variable", choices = NULL),
+                   helpText("Only categorical variables with 2–9 levels are available.")
                  ),
 
-                 # Compute button
+                 tags$h4("6. Run Estimation"),
                  actionButton("computeTIR", "Compute TIR")
                ),
 
                mainPanel(
+                 uiOutput("TIR_description"),
+                 tags$h4("Estimated Time in Range"),
                  tableOutput("TIR_table"),
+
+                 tags$h4("Errors (if any)"),
                  verbatimTextOutput("TIR_errors"),
+
+                 tags$h4("Group Comparison Test (Stratified + Bootstrap)"),
                  verbatimTextOutput("TIR_test")
                )
-             )),
+             )
+    ),
 
     # panel - individual metrics - AGP
     tabPanel("IGP", fluid = TRUE,
