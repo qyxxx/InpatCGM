@@ -2,7 +2,7 @@
 % Please edit documentation in R/estTIR.R
 \name{estTIR}
 \alias{estTIR}
-\title{Estimate Time in Range (TIR)}
+\title{Wrapper for Estimating Time in Range (TIR)}
 \usage{
 estTIR(
   data,
@@ -19,34 +19,31 @@ estTIR(
 )
 }
 \arguments{
-\item{data}{A data frame containing glucose monitoring data.}
+\item{data}{A data frame containing glucose data.}
 
-\item{method}{A string specifying the estimation method: "naive" or "proposed".}
+\item{method}{Estimation method: "naive" or "proposed".}
 
-\item{model}{A string specifying the model type (default: "NULL" for non-model-based approaches, or "cox" for Cox model).}
+\item{model}{Model type for proposed estimator: "NULL" or "cox".}
 
-\item{time}{A numeric vector of length 2 specifying the start and end time window (default: c(0, 10075)).}
+\item{time}{A numeric vector of length 2 specifying time window.}
 
-\item{range}{A numeric vector specifying the glucose range for in-range classification (default: c(70, 180)).}
+\item{range}{Numeric vector of length 2 for glucose range.}
 
-\item{boot}{Number of bootstrap iterations (default: NULL, no bootstrapping).}
+\item{boot}{Number of bootstrap replicates.}
 
-\item{id}{Column name for subject IDs (default: "patient_id").}
+\item{id}{Subject ID column name.}
 
-\item{glucose}{Column name for glucose values (default: "glucose").}
+\item{glucose}{Glucose value column name.}
 
-\item{time_col}{Column name representing time (default: "time").}
+\item{time_col}{Time variable column name.}
 
-\item{period}{Additional time offset for stop time in Cox model (default: 5).}
+\item{period}{Time offset for Cox model (default: 5).}
 
-\item{formula}{A formula string for the Cox model (default: "var1").}
+\item{formula}{Formula string for Cox model.}
 }
 \value{
-A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+A list with TIR estimate, standard error, confidence intervals, and optional bootstrap samples.
 }
 \description{
-Estimates the mean Time in Range (TIR) using different methods.
-
-This function estimates TIR using either the naive estimator, the proposed
-noninformative follow-up estimator, or the Cox model-based estimator.
+Estimates TIR using the specified method (naive or proposed) and model (NULL or cox).
 }

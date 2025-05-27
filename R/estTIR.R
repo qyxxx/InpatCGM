@@ -1,259 +1,270 @@
-#' @title Estimate Time in Range (TIR)
-#' @description
-#' Estimates the mean Time in Range (TIR) using different methods.
-#'
-#' This function estimates TIR using either the naive estimator, the proposed
-#' noninformative follow-up estimator, or the Cox model-based estimator.
-#'
-#' @param data A data frame containing glucose monitoring data.
-#' @param method A string specifying the estimation method: "naive" or "proposed".
-#' @param model A string specifying the model type (default: "NULL" for non-model-based approaches, or "cox" for Cox model).
-#' @param time A numeric vector of length 2 specifying the start and end time window (default: c(0, 10075)).
-#' @param range A numeric vector specifying the glucose range for in-range classification (default: c(70, 180)).
-#' @param boot Number of bootstrap iterations (default: NULL, no bootstrapping).
-#' @param id Column name for subject IDs (default: "patient_id").
-#' @param glucose Column name for glucose values (default: "glucose").
-#' @param time_col Column name representing time (default: "time").
-#' @param period Additional time offset for stop time in Cox model (default: 5).
-#' @param formula A formula string for the Cox model (default: "var1").
-#' @return A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+#' @title Vectorized Value-in-Range Check
+#' @description Checks whether a numeric vector falls within a specified range.
+#' @param x A numeric vector.
+#' @param range A numeric vector of length 2 indicating the lower and upper bounds.
+#' @return An integer vector: 1 if in range, 0 if not, NA if input is NA.
+#' @export
+value_in_range_vec <- function(x, range = c(-.Machine$integer.max, .Machine$integer.max)) {
+  ifelse(is.na(x), NA_integer_, as.integer(x >= range[1] & x <= range[2]))
+}
+
+#' @title Wrapper for Estimating Time in Range (TIR)
+#' @description Estimates TIR using the specified method (naive or proposed) and model (NULL or cox).
+#' @param data A data frame containing glucose data.
+#' @param method Estimation method: "naive" or "proposed".
+#' @param model Model type for proposed estimator: "NULL" or "cox".
+#' @param time A numeric vector of length 2 specifying time window.
+#' @param range Numeric vector of length 2 for glucose range.
+#' @param boot Number of bootstrap replicates.
+#' @param id Subject ID column name.
+#' @param glucose Glucose value column name.
+#' @param time_col Time variable column name.
+#' @param period Time offset for Cox model (default: 5).
+#' @param formula Formula string for Cox model.
+#' @return A list with TIR estimate, standard error, confidence intervals, and optional bootstrap samples.
 #' @export
 estTIR <- function(data, method = "proposed", model = "NULL",
                    time = c(0, 1440 * 7 - 5), range = c(70, 180),
                    boot = NULL, id = "patient_id", glucose = "glucose",
                    time_col = "time", period = 5, formula = "var1") {
-  # Compute value_in_range based on the specified range
-  data <- data |>
-    dplyr::mutate(value_in_range = sapply(.data[[glucose]], value_in_range, range = range))
-  # Generate event column for Cox model (1 if last observation for a subject, otherwise 0)
-  data <- data |> dplyr::group_by(.data[[id]]) |> dplyr::mutate(event = dplyr::if_else(.data[[time_col]] == max(.data[[time_col]]),1,0)) |> dplyr::ungroup()
-  # Compute stop time for Cox model
+  data <- data |> dplyr::mutate(value_in_range = value_in_range_vec(.data[[glucose]], range = range))
+
+  data <- data |> dplyr::group_by(.data[[id]]) |>
+    dplyr::mutate(event = dplyr::if_else(.data[[time_col]] == max(.data[[time_col]]), 1L, 0L)) |>
+    dplyr::ungroup()
+
   data$time2 <- data[[time_col]] + period
 
-  # Initialize `est` variable before assignment
-  est <- NULL
-  # Use switch() for cleaner method selection
-  est <- switch(method,
-                "naive" = {
-                  if (model == "NULL") {
-                    naive_est(data, min_time = time[1], max_time = time[2],
-                              boot = boot, id_col = id, time = time_col,
-                              value_in_range = "value_in_range")
-                  } else stop("Error: Model not recognized for 'naive' method")
-                },
-                "proposed" = {
-                  switch(model,
-                         "NULL" = proposed_est_noninfo(data, min_time = time[1], max_time = time[2],
-                                                       boot = boot, id_col = id, time = time_col,
-                                                       value_in_range = "value_in_range"),
-                         "cox" = proposed_est_cox(data, min_time = time[1], max_time = time[2],
-                                                  id_col = id, event_col = "event",
-                                                  start_col = time_col, stop_col = "time2",
-                                                  formula = formula, boot = boot,
-                                                  value_in_range = "value_in_range"),
-                         stop("Error: Model not recognized for 'proposed' method")
-                  )
-                },
-                stop("Error: Method not recognized")
+  if (method == "naive") {
+    if (model == "NULL") {
+      return(naive_est(data, min_time = time[1], max_time = time[2], boot = boot,
+                       id_col = id, time = time_col, value_in_range = "value_in_range"))
+    } else {
+      stop("Invalid model type for naive method")
+    }
+  } else if (method == "proposed") {
+    if (model == "NULL") {
+      return(proposed_est_noninfo(data, min_time = time[1], max_time = time[2], boot = boot,
+                                  id_col = id, time = time_col, value_in_range = "value_in_range"))
+    } else if (model == "cox") {
+      return(proposed_est_cox(data, min_time = time[1], max_time = time[2], boot = boot,
+                              id_col = id, event_col = "event",
+                              start_col = time_col, stop_col = "time2",
+                              formula = formula, value_in_range = "value_in_range"))
+    } else {
+      stop("Invalid model type for proposed method")
+    }
+  } else {
+    stop("Method must be 'naive' or 'proposed'")
+  }
+}
+
+#' @title Naive Estimator for Time in Range (TIR)
+#' @description Computes the mean Time in Range (TIR) across subjects using a naive estimator. Optionally supports bootstrapping.
+#' @param data A data frame containing glucose readings.
+#' @param min_time Minimum time value to filter data.
+#' @param max_time Maximum time value to filter data.
+#' @param boot Number of bootstrap replicates (default: NULL).
+#' @param id_col Column name for subject ID.
+#' @param time Column name for time variable.
+#' @param value_in_range Column name for 0/1 indicator of glucose within range.
+#' @return A list with estimated TIR, optional bootstrap standard error and confidence intervals.
+#' @export
+naive_est <- function(data, min_time = 0, max_time = (1440 * 7 - 5),
+                      boot = NULL, id_col = "patient_id", time = "time", value_in_range = "value_in_range") {
+  data <- data[data[[time]] <= max_time & data[[time]] >= min_time, ]
+
+  mean_TIR <- mean(
+    data |>
+      dplyr::group_by(.data[[id_col]]) |>
+      dplyr::summarise(TIR_i = mean(.data[[value_in_range]], na.rm = TRUE), .groups = "drop") |>
+      dplyr::pull(TIR_i),
+    na.rm = TRUE
   )
 
-  # Ensure `est` is not NULL before assigning the class
-  if (is.null(est)) stop("Error: Estimation method failed to return a result")
+  if (is.null(boot)) return(list(est = mean_TIR))
 
-  # Assign "TIR" class to result
-  class(est) <- "TIR"
-  return(est)
+  unique_ids <- unique(data[[id_col]])
+  n_ids <- length(unique_ids)
+
+  boot_TIR <- parallel::mclapply(seq_len(boot), function(b) {
+    boot_ids <- data.frame(ID = sample(unique_ids, n_ids, replace = TRUE))
+    names(boot_ids) <- id_col
+    boot_sample <- merge(boot_ids, data, by = id_col, all.x = TRUE)
+
+    boot_sample <- boot_sample |>
+      dplyr::group_by(.data[[id_col]], .data[[time]]) |>
+      dplyr::mutate(count_boot = dplyr::row_number()) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(ID_boot = ifelse(count_boot > 1, paste0(.data[[id_col]], "BOOT", count_boot), .data[[id_col]])) |>
+      dplyr::select(-count_boot)
+
+    naive_est(boot_sample, min_time, max_time, boot = NULL, id_col = "ID_boot", time = time, value_in_range = value_in_range)$est
+  }, mc.cores = max(1, parallel::detectCores() - 1))
+
+  boot_TIR <- unlist(boot_TIR)
+  boot_TIR <- na.omit(boot_TIR)
+  list(est = mean_TIR,
+       `std err` = sd(boot_TIR),
+       `CI 025` = quantile(boot_TIR, 0.025),
+       `CI 975` = quantile(boot_TIR, 0.975),
+       boot_TIR = boot_TIR)
 }
 
-
-#' @title Computes the naive estimator for mean Time in Range (TIR).
-#' @description
-#' This function estimates the mean TIR for a given dataset, filtering based on a
-#' specified time window. If bootstrapping is enabled, it computes confidence
-#' intervals using resampling.
-#'
-#' @param data A data frame containing long format time-series data.
-#' @param min_time The minimum time threshold for filtering (default = 0).
-#' @param max_time The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).
-#' @param boot Number of bootstrap iterations (default = NULL, no bootstrapping).
-#' @param id_col Column name identifying subjects (default = "patient_id").
-#' @param time Column name representing time (default = "time").
-#' @param value_in_range Column name of the binary indicator (0/1) for time in range (default = "value_in_range").
-#' @return A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+#' @title Proposed Estimator (Non-informative Follow-up)
+#' @description Computes the mean TIR using time-stratified averaging. Supports optional bootstrapping.
+#' @param data A data frame of glucose time-series.
+#' @param min_time Minimum time threshold.
+#' @param max_time Maximum time threshold.
+#' @param boot Number of bootstrap replicates.
+#' @param id_col Column for subject ID.
+#' @param time Time column.
+#' @param value_in_range Column name for 0/1 indicator for in-range glucose.
+#' @return A list containing TIR estimate, standard error, and confidence intervals.
 #' @export
-naive_est <- function(data,
-                      min_time = 0, max_time = (1440 * 7 - 5),
-                      boot = NULL,
-                      id_col = "patient_id", time = "time", value_in_range = "value_in_range") {
-  # Filter data based on time range
+proposed_est_noninfo <- function(data, min_time = 0, max_time = (1440 * 7 - 5),
+                                 boot = NULL, id_col = "patient_id", time = "time", value_in_range = "value_in_range") {
   data <- data[data[[time]] <= max_time & data[[time]] >= min_time, ]
-  # Compute mean TIR per subject, then overall mean TIR
-  TIR <- data|>
-    dplyr::group_by(.data[[id_col]]) |>
-    dplyr::summarise(TIR_i = mean(.data[[value_in_range]], na.rm = TRUE), .groups = "drop") |>
-    dplyr::summarise(TIR = mean(TIR_i), .groups = "drop") |>
-    dplyr::pull(TIR)
 
-  if (is.null(boot)) {
-    return(list(est = TIR))
-  } else {
-    unique_ids <- unique(data[[id_col]])
-    n_ids <- length(unique_ids)
-    boot_TIR <- replicate(boot, {
-      boot_id <- data.frame(ID = sample((unique_ids), n_ids, replace = T))
-      colnames(boot_id) <- id_col
-      boot_sample_temp <- boot_id |> dplyr::left_join(data, by = id_col, relationship = "many-to-many")
-      count_boot <- NULL
-      boot_sample <- boot_sample_temp |>
-        dplyr::group_by(.data[[id_col]], .data[[time]]) |>
-        dplyr::mutate(count_boot = dplyr::row_number()) |>
-        dplyr::ungroup() |>
-        dplyr::mutate(ID_boot = ifelse(count_boot > 1, paste0(.data[[id_col]], "BOOT", count_boot), .data[[id_col]])) |>
-        dplyr::select(-count_boot)
-      naive_est(boot_sample, min_time, max_time, boot = NULL, "ID_boot", time, value_in_range)$est
-    })
-    return(list(
-      est = TIR,
-      `std err` = sd(boot_TIR),
-      `CI 025` = quantile(boot_TIR, 0.025),
-      `CI 975` = quantile(boot_TIR, 0.975),
-      boot_TIR = boot_TIR
-    ))
-  }
+  TIR <- mean(
+    data |>
+      dplyr::group_by(.data[[time]]) |>
+      dplyr::summarise(avg_val = mean(.data[[value_in_range]], na.rm = TRUE), .groups = "drop") |>
+      dplyr::pull(avg_val),
+    na.rm = TRUE
+  )
+
+  if (is.null(boot)) return(list(est = TIR))
+
+  unique_ids <- unique(data[[id_col]])
+  n_ids <- length(unique_ids)
+
+  boot_TIR <- parallel::mclapply(seq_len(boot), function(b) {
+    boot_ids <- data.frame(ID = sample(unique_ids, n_ids, replace = TRUE))
+    names(boot_ids) <- id_col
+    boot_sample <- merge(boot_ids, data, by = id_col, all.x = TRUE)
+
+    boot_sample <- boot_sample |>
+      dplyr::group_by(.data[[id_col]], .data[[time]]) |>
+      dplyr::mutate(count_boot = dplyr::row_number()) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(ID_boot = ifelse(count_boot > 1, paste0(.data[[id_col]], "BOOT", count_boot), .data[[id_col]])) |>
+      dplyr::select(-count_boot)
+
+    proposed_est_noninfo(boot_sample, min_time, max_time, boot = NULL, id_col = "ID_boot", time = time, value_in_range = value_in_range)$est
+  }, mc.cores = max(1, parallel::detectCores() - 1))
+
+  boot_TIR <- unlist(boot_TIR)
+  boot_TIR <- na.omit(boot_TIR)
+  list(est = TIR,
+       `std err` = sd(boot_TIR),
+       `CI 025` = quantile(boot_TIR, 0.025),
+       `CI 975` = quantile(boot_TIR, 0.975),
+       boot_TIR = boot_TIR)
 }
 
-
-#' @title Computes the proposed estimator for mean Time in Range (TIR) under the assumption of noninformative follow-up duration.
-#' @description
-#' This function estimates the mean TIR using a time-stratified averaging
-#' approach. If bootstrapping is enabled, it computes confidence intervals
-#' using resampling.
-#'
-#' @param data A data frame containing time-series data.
-#' @param min_time The minimum time threshold for filtering (default = 0).
-#' @param max_time The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).
-#' @param boot Number of bootstrap iterations (default = NULL, no bootstrapping).
-#' @param id_col Column name identifying subjects (default = "patient_id").
-#' @param time Column name representing time (default = "time").
-#' @param value_in_range Column name of the binary indicator (0/1) for time in range (default = "value_in_range").
-#' @return A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
-#' @export
-proposed_est_noninfo <- function(data,
-                                 min_time = 0, max_time = (1440 * 7 - 5),
-                                 boot = NULL,
-                                 id_col = "patient_id", time = "time", value_in_range = "value_in_range") {
-  data <- data[data[[time]] <= max_time & data[[time]] >= min_time, ]
-  TIR <- data |>
-    dplyr::group_by(.data[[time]]) |>
-    dplyr::summarise(avg_val = mean(value_in_range, na.rm = TRUE), .groups = "drop") |>
-    dplyr::summarise(TIR = mean(avg_val), .groups = "drop") |>
-    dplyr::pull(TIR)
-
-  if (is.null(boot)) {
-    return(list(est = TIR))
-  } else {
-    unique_ids <- unique(data[[id_col]])
-    n_ids <- length(unique_ids)
-    boot_TIR <- replicate(boot, {
-      boot_id <- data.frame(ID = sample((unique_ids), n_ids, replace = T))
-      colnames(boot_id) <- id_col
-      boot_sample_temp <- boot_id |> dplyr::left_join(data, by = id_col, relationship = "many-to-many")
-      count_boot <- NULL
-      boot_sample <- boot_sample_temp |>
-        dplyr::group_by(.data[[id_col]], .data[[time]]) |>
-        dplyr::mutate(count_boot = dplyr::row_number()) |>
-        dplyr::ungroup() |>
-        dplyr::mutate(ID_boot = ifelse(count_boot > 1, paste0(.data[[id_col]], "BOOT", count_boot), .data[[id_col]])) |>
-        dplyr::select(-count_boot)
-      proposed_est_noninfo(boot_sample, min_time, max_time, boot = NULL, "ID_boot", time, value_in_range)$est
-    })
-    return(list(
-      est = TIR,
-      `std err` = sd(boot_TIR),
-      `CI 025` = quantile(boot_TIR, 0.025),
-      `CI 975` = quantile(boot_TIR, 0.975),
-      boot_TIR = boot_TIR
-    ))
-  }
-}
-
-
-#' @title Computes the proposed estimator for mean Time in Range (TIR) using a Cox model.
-#' @description
-#' This function estimates TIR using a Cox proportional hazards model, weighting observations
-#' based on their predicted survival. If bootstrapping is enabled, confidence intervals are computed.
-#'
-#' @param data A data frame containing time-to-event data.
-#' @param min_time The minimum time threshold for filtering (default = 0).
-#' @param max_time The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).
-#' @param id_col Column name identifying subjects (default = "patient_id").
-#' @param event_col Column name representing event occurrence (default = "event").
-#' @param start_col Column name representing the start time (default = "time").
-#' @param stop_col Column name representing the stop time (default = "time2").
-#' @param formula Right-hand side of the Cox model formula as a character string (default = "var1").
-#' @param boot Number of bootstrap iterations (default = NULL, no bootstrapping).
-#' @param value_in_range Column name of the binary indicator (0/1) for time in range (default = "value_in_range").
-#' @return A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+#' @title Proposed Estimator Using Cox Model
+#' @description Estimates Time in Range using survival-weighted averaging based on a Cox model for dropout. Supports bootstrapping.
+#' @param data A data frame of glucose and survival information.
+#' @param min_time Minimum time value for filtering.
+#' @param max_time Maximum time value for filtering.
+#' @param id_col Subject ID column.
+#' @param event_col Event column for Cox model.
+#' @param start_col Start time column.
+#' @param stop_col Stop time column.
+#' @param formula Right-hand side formula for Cox model.
+#' @param boot Number of bootstrap iterations.
+#' @param value_in_range Column name for binary glucose range indicator.
+#' @return A list with TIR estimate, standard error, and confidence intervals.
 #' @export
 proposed_est_cox <- function(data, min_time = 0, max_time = (1440 * 7 - 5),
                              id_col = "patient_id", event_col = "event",
-                             start_col = "time", stop_col = "time2", formula = "var1",
-                             boot = NULL, value_in_range = "value_in_range") {
-  # data <- data.table::as.data.table(data)
-  # Fit Cox model
-  cox_fit <- survival::coxph(as.formula(paste0("survival::Surv(", start_col, ",", stop_col, ",", "event==1", ") ~ ", formula, "+1")), data = data, method="breslow")
-  # Baseline cumulative hazard
-  baseline_hazard <- survival::basehaz(cox_fit, centered = FALSE)
-  # Add time and hazard difference
-  baseline_hazard <- baseline_hazard |> dplyr::arrange(time) |> dplyr::mutate(hazard_diff = c(0, diff(hazard)))
-  # Predict partial hazard
-  data[, "predict_partial_hazard"] <- predict(cox_fit, newdata = data, type = "risk")
-  # Merge cumulative hazard with dataset
-  data <- merge(data, baseline_hazard, by.x = start_col, by.y = "time", all.x = TRUE)
+                             start_col = "minute_enrollment", stop_col = "time2",
+                             formula = "var1", boot = NULL,
+                             value_in_range = "value_in_range", period = 5) {
+  surv_formula <- as.formula(paste0("survival::Surv(", start_col, ",", stop_col, ",", event_col, ") ~ ", formula))
+
+  cox_fit <- survival::coxph(surv_formula, data = data, method = "breslow",
+                             control = survival::coxph.control(iter.max = 50))
+
+  basehaz <- survival::basehaz(cox_fit, centered = FALSE) |>
+    dplyr::arrange(time) |>
+    dplyr::mutate(hazard_diff = c(0, diff(hazard)))
+
+  idx <- findInterval(data[[start_col]], basehaz$time)
+  idx[idx == 0] <- 1  # ensure valid index
+
+  data$hazard <- basehaz$hazard[idx]
+  data$hazard_diff <- basehaz$hazard_diff[idx]
+  data$predict_partial_hazard <- predict(cox_fit, newdata = data, type = "risk")
+
   data <- data |>
-    dplyr::mutate(across(everything(), ~ tidyr::replace_na(.x, 0)))
-  # Compute lambda_exp_diff
-  data <- data |> dplyr::mutate(lambda_exp_diff = predict_partial_hazard * hazard_diff)
-  data <- data |> dplyr::group_by(.data[[id_col]]) |>
-    dplyr::mutate(cum_lambda_exp_diff = cumsum(lambda_exp_diff), weight = 1 / exp(-cum_lambda_exp_diff)) |> dplyr::ungroup()
+    dplyr::mutate(across(c(predict_partial_hazard, hazard_diff), ~ tidyr::replace_na(.x, 0)),
+                  lambda_exp_diff = predict_partial_hazard * hazard_diff) |>
+    dplyr::group_by(.data[[id_col]]) |>
+    dplyr::mutate(cum_lambda_exp_diff = cumsum(lambda_exp_diff),
+                  weight = 1 / exp(-cum_lambda_exp_diff)) |>
+    dplyr::ungroup()
 
-  # Calculate TIR
   data <- data[data[[start_col]] <= max_time & data[[start_col]] >= min_time, ]
-  TIR <- data |>
-    dplyr::group_by(.data[[start_col]]) |>
-    dplyr::summarise(weighted_avg = weighted.mean(.data[[value_in_range]], weight), .groups = "drop") |>
-    dplyr::summarise(TIR = mean(weighted_avg), .groups = "drop") |>
-    dplyr::pull(TIR)
 
-  if (is.null(boot)) {
-    return(list(est = TIR))
-  } else {
-    unique_ids <- unique(data[[id_col]])
-    n_ids <- length(unique_ids)
-    boot_TIR <- replicate(boot, {
-      boot_id <- data.frame(ID = sample((unique_ids), n_ids, replace = T))
-      colnames(boot_id) <- id_col
-      boot_sample_temp <- boot_id |> dplyr::left_join(data, by = id_col, relationship = "many-to-many")
-      count_boot <- NULL
-      boot_sample <- boot_sample_temp |>
+  TIR <- mean(
+    data |>
+      dplyr::group_by(.data[[start_col]]) |>
+      dplyr::summarise(weighted_avg = weighted.mean(.data[[value_in_range]], weight), .groups = "drop") |>
+      dplyr::pull(weighted_avg),
+    na.rm = TRUE
+  )
+
+  if (is.null(boot)) return(list(est = TIR))
+
+  unique_ids <- unique(data[[id_col]])
+  n_ids <- length(unique_ids)
+
+  boot_TIR <- parallel::mclapply(seq_len(boot), function(b) {
+    tryCatch({
+      boot_ids <- data.frame(ID = sample(unique_ids, n_ids, replace = TRUE))
+      names(boot_ids) <- id_col
+      boot_sample <- merge(boot_ids, data, by = id_col, all.x = TRUE)
+
+      boot_sample <- boot_sample |>
         dplyr::group_by(.data[[id_col]], .data[[start_col]]) |>
         dplyr::mutate(count_boot = dplyr::row_number()) |>
         dplyr::ungroup() |>
-        dplyr::mutate(ID_boot = ifelse(count_boot > 1, paste0(.data[[id_col]], "BOOT", count_boot), .data[[id_col]])) |>
-        dplyr::select(-count_boot, -.data[[id_col]], -predict_partial_hazard, -hazard, -hazard_diff, -lambda_exp_diff) |>
+        dplyr::mutate(ID_boot = ifelse(count_boot > 1,
+                                       paste0(.data[[id_col]], "BOOT", count_boot),
+                                       .data[[id_col]])) |>
+        dplyr::select(-count_boot, -all_of(id_col)) |>
         dplyr::rename(patient_id = ID_boot)
-      proposed_est_cox(boot_sample, min_time, max_time, "patient_id", event_col, start_col, stop_col, formula, boot = NULL, value_in_range)$est
-    })
-    return(list(
-      est = TIR,
-      `std err` = sd(boot_TIR),
-      `CI 025` = quantile(boot_TIR, 0.025),
-      `CI 975` = quantile(boot_TIR, 0.975),
-      boot_TIR = boot_TIR
-    ))
-  }
-}
 
+      boot_sample[[stop_col]] <- boot_sample[[start_col]] + period
+
+      proposed_est_cox(boot_sample, min_time, max_time,
+                       id_col = "patient_id", event_col = event_col,
+                       start_col = start_col, stop_col = stop_col,
+                       formula = formula, boot = NULL,
+                       value_in_range = value_in_range,
+                       period = period)$est
+    }, error = function(e) {
+      message("Bootstrap replicate ", b, " failed: ", e$message)
+      NA_real_
+    })
+  }, mc.cores = max(1, parallel::detectCores() - 1))
+
+  boot_TIR <- unlist(boot_TIR)
+  boot_TIR <- na.omit(boot_TIR)
+
+  if (length(boot_TIR) == 0) {
+    warning("All bootstrap replicates failed.")
+    return(list(est = TIR, `std err` = NA, `CI 025` = NA, `CI 975` = NA, boot_TIR = NA))
+  }
+
+  list(est = TIR,
+       `std err` = sd(boot_TIR),
+       `CI 025` = quantile(boot_TIR, 0.025),
+       `CI 975` = quantile(boot_TIR, 0.975),
+       boot_TIR = boot_TIR)
+}
 
 #' @title Recursively rounds numeric values in nested lists, data frames, and tibbles.
 #' @description
