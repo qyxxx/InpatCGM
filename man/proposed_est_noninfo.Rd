@@ -2,7 +2,7 @@
 % Please edit documentation in R/estTIR.R
 \name{proposed_est_noninfo}
 \alias{proposed_est_noninfo}
-\title{Computes the proposed estimator for mean Time in Range (TIR) under the assumption of noninformative follow-up duration.}
+\title{Proposed Estimator (Non-informative Follow-up)}
 \usage{
 proposed_est_noninfo(
   data,
@@ -15,25 +15,23 @@ proposed_est_noninfo(
 )
 }
 \arguments{
-\item{data}{A data frame containing time-series data.}
+\item{data}{A data frame of glucose time-series.}
 
-\item{min_time}{The minimum time threshold for filtering (default = 0).}
+\item{min_time}{Minimum time threshold.}
 
-\item{max_time}{The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).}
+\item{max_time}{Maximum time threshold.}
 
-\item{boot}{Number of bootstrap iterations (default = NULL, no bootstrapping).}
+\item{boot}{Number of bootstrap replicates.}
 
-\item{id_col}{Column name identifying subjects (default = "patient_id").}
+\item{id_col}{Column for subject ID.}
 
-\item{time}{Column name representing time (default = "time").}
+\item{time}{Time column.}
 
-\item{value_in_range}{Column name of the binary indicator (0/1) for time in range (default = "value_in_range").}
+\item{value_in_range}{Column name for 0/1 indicator for in-range glucose.}
 }
 \value{
-A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+A list containing TIR estimate, standard error, and confidence intervals.
 }
 \description{
-This function estimates the mean TIR using a time-stratified averaging
-approach. If bootstrapping is enabled, it computes confidence intervals
-using resampling.
+Computes the mean TIR using time-stratified averaging. Supports optional bootstrapping.
 }

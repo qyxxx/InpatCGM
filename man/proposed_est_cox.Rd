@@ -2,7 +2,7 @@
 % Please edit documentation in R/estTIR.R
 \name{proposed_est_cox}
 \alias{proposed_est_cox}
-\title{Computes the proposed estimator for mean Time in Range (TIR) using a Cox model.}
+\title{Proposed Estimator Using Cox Model}
 \usage{
 proposed_est_cox(
   data,
@@ -10,38 +10,38 @@ proposed_est_cox(
   max_time = (1440 * 7 - 5),
   id_col = "patient_id",
   event_col = "event",
-  start_col = "time",
+  start_col = "minute_enrollment",
   stop_col = "time2",
   formula = "var1",
   boot = NULL,
-  value_in_range = "value_in_range"
+  value_in_range = "value_in_range",
+  period = 5
 )
 }
 \arguments{
-\item{data}{A data frame containing time-to-event data.}
+\item{data}{A data frame of glucose and survival information.}
 
-\item{min_time}{The minimum time threshold for filtering (default = 0).}
+\item{min_time}{Minimum time value for filtering.}
 
-\item{max_time}{The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).}
+\item{max_time}{Maximum time value for filtering.}
 
-\item{id_col}{Column name identifying subjects (default = "patient_id").}
+\item{id_col}{Subject ID column.}
 
-\item{event_col}{Column name representing event occurrence (default = "event").}
+\item{event_col}{Event column for Cox model.}
 
-\item{start_col}{Column name representing the start time (default = "time").}
+\item{start_col}{Start time column.}
 
-\item{stop_col}{Column name representing the stop time (default = "time2").}
+\item{stop_col}{Stop time column.}
 
-\item{formula}{Right-hand side of the Cox model formula as a character string (default = "var1").}
+\item{formula}{Right-hand side formula for Cox model.}
 
-\item{boot}{Number of bootstrap iterations (default = NULL, no bootstrapping).}
+\item{boot}{Number of bootstrap iterations.}
 
-\item{value_in_range}{Column name of the binary indicator (0/1) for time in range (default = "value_in_range").}
+\item{value_in_range}{Column name for binary glucose range indicator.}
 }
 \value{
-A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+A list with TIR estimate, standard error, and confidence intervals.
 }
 \description{
-This function estimates TIR using a Cox proportional hazards model, weighting observations
-based on their predicted survival. If bootstrapping is enabled, confidence intervals are computed.
+Estimates Time in Range using survival-weighted averaging based on a Cox model for dropout. Supports bootstrapping.
 }

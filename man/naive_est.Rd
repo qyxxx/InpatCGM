@@ -2,7 +2,7 @@
 % Please edit documentation in R/estTIR.R
 \name{naive_est}
 \alias{naive_est}
-\title{Computes the naive estimator for mean Time in Range (TIR).}
+\title{Naive Estimator for Time in Range (TIR)}
 \usage{
 naive_est(
   data,
@@ -15,25 +15,23 @@ naive_est(
 )
 }
 \arguments{
-\item{data}{A data frame containing long format time-series data.}
+\item{data}{A data frame containing glucose readings.}
 
-\item{min_time}{The minimum time threshold for filtering (default = 0).}
+\item{min_time}{Minimum time value to filter data.}
 
-\item{max_time}{The maximum time threshold for filtering (default = 10075, equivalent to 1440 * 7 - 5).}
+\item{max_time}{Maximum time value to filter data.}
 
-\item{boot}{Number of bootstrap iterations (default = NULL, no bootstrapping).}
+\item{boot}{Number of bootstrap replicates (default: NULL).}
 
-\item{id_col}{Column name identifying subjects (default = "patient_id").}
+\item{id_col}{Column name for subject ID.}
 
-\item{time}{Column name representing time (default = "time").}
+\item{time}{Column name for time variable.}
 
-\item{value_in_range}{Column name of the binary indicator (0/1) for time in range (default = "value_in_range").}
+\item{value_in_range}{Column name for 0/1 indicator of glucose within range.}
 }
 \value{
-A list containing TIR estimation results, including the estimate, standard error, and confidence intervals.
+A list with estimated TIR, optional bootstrap standard error and confidence intervals.
 }
 \description{
-This function estimates the mean TIR for a given dataset, filtering based on a
-specified time window. If bootstrapping is enabled, it computes confidence
-intervals using resampling.
+Computes the mean Time in Range (TIR) across subjects using a naive estimator. Optionally supports bootstrapping.
 }

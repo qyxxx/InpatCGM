@@ -35,6 +35,7 @@ df <- data.frame(
 )
 
 # Plot TIR
-AGP_plotTIR(df, ID = "patient_id", time = "date_time", glucose = "Glucose", target_glucose = c(70, 180))
+AGP_plotTIR(df, ID = "patient_id",
+time = "date_time", glucose = "Glucose", target_glucose = c(70, 180))
 }
 }
