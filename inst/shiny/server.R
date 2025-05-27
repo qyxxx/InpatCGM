@@ -162,7 +162,7 @@ server <- function(input, output, session) {
 
     # Clarify model choices:
     # "NULL" = non-informative missingness
-    # "cox" = follow-up modeled by Cox proportional hazards
+    # "Cox" = follow-up modeled by Cox proportional hazards
     selected_model <- if (input$model == "NULL") 'NULL' else input$model
 
     if (input$stratify) {
@@ -324,7 +324,7 @@ server <- function(input, output, session) {
     )
     model_text <- switch(input$model,
                          "NULL" = "Model: Assumes missingness is non-informative.",
-                         "cox" = "Model: Models follow-up duration using Cox regression."
+                         "Cox" = "Model: Models follow-up duration using Cox regression."
     )
     HTML(paste("<strong>Estimation Method:</strong>", method_text, "<br/>",
                "<strong>Missingness Model:</strong>", model_text))

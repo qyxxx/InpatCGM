@@ -74,7 +74,7 @@ ui <- fluidPage(
                  checkboxInput("use_bootstrap", "Use Bootstrap?", value = FALSE),
                  conditionalPanel(
                    condition = "input.use_bootstrap == true",
-                   numericInput("boot_num", "Number of Bootstrap Replicates", value = 20, min = 10),
+                   numericInput("boot_num", "Number of Bootstrap Replicates", value = 200, min = 10),
                    helpText("Used to calculate standard error and confidence intervals.")
                  ),
 
@@ -82,17 +82,17 @@ ui <- fluidPage(
                  conditionalPanel(
                    condition = "input.method == 'proposed'",
                    selectInput("model", "Follow-up Duration Model",
-                               choices = c("NULL", "cox"), selected = "NULL"),
-                   helpText("NULL = assumes non-informative missingness; cox = models follow-up time via Cox regression."),
+                               choices = c("NULL", "Cox"), selected = "NULL"),
+                   helpText("NULL = assumes non-informative missingness; Cox = models follow-up time via Cox regression."),
 
                    conditionalPanel(
-                     condition = "input.model == 'cox'",
+                     condition = "input.model == 'Cox'",
                      textInput("cox_formula", "Cox Model Formula (e.g., age + sex + bmi)", value = ""),
                      helpText("Specify covariates used to model dropout.")
                    )
                  ),
 
-                 tags$h4("4. Glucose Range for TIR"),
+                 tags$h4("4. Glucose Range for mean TIR"),
                  textInput("estTIR_range", "Target Glucose Range (mg/dL)", value = "70, 180"),
                  helpText("Specify lower and upper bounds, comma-separated."),
 
@@ -105,12 +105,12 @@ ui <- fluidPage(
                  ),
 
                  tags$h4("6. Run Estimation"),
-                 actionButton("computeTIR", "Compute TIR")
+                 actionButton("computeTIR", "Estimate mean TIR")
                ),
 
                mainPanel(
                  uiOutput("TIR_description"),
-                 tags$h4("Estimated Time in Range"),
+                 tags$h4("Estimated mean Time in Range"),
                  tableOutput("TIR_table"),
 
                  tags$h4("Errors (if any)"),

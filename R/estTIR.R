@@ -46,7 +46,7 @@ estTIR <- function(data, method = "proposed", model = "NULL",
     if (model == "NULL") {
       return(proposed_est_noninfo(data, min_time = time[1], max_time = time[2], boot = boot,
                                   id_col = id, time = time_col, value_in_range = "value_in_range"))
-    } else if (model == "cox") {
+    } else if (model == "Cox") {
       return(proposed_est_cox(data, min_time = time[1], max_time = time[2], boot = boot,
                               id_col = id, event_col = "event",
                               start_col = time_col, stop_col = "time2",
