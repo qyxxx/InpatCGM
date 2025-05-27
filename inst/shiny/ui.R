@@ -172,7 +172,6 @@ ui <- fluidPage(
 
                  tags$h4("3. Upload Covariate File for Prediction"),
                  fileInput("pred_covariate_file", "Upload Prediction Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
-                 actionButton("check_pred_covariate", "Preview Uploaded File"),
 
                  tags$h4("4. Glucose Range"),
                  textInput("pred_target_range", "Target Glucose Range (e.g., 70,180)", value = "70,180"),

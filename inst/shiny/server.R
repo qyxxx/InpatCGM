@@ -559,7 +559,7 @@ server <- function(input, output, session) {
   pred_covariate_data <- reactiveVal(NULL)
 
   # Load uploaded covariate matrix
-  observeEvent(input$check_pred_covariate, {
+  observe({
     req(input$pred_covariate_file)
     df <- read.csv(input$pred_covariate_file$datapath, stringsAsFactors = FALSE)
     pred_covariate_data(df)
