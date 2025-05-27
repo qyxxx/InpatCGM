@@ -40,12 +40,24 @@ wald_test_TIR <- function(estimates, boot_TIR_list) {
   K <- length(estimates)
   if (K < 2) return(NULL)
 
+  # Step 1: truncate to the minimum number of replicates available across all groups
+  B_vec <- sapply(boot_TIR_list, length)
+  B <- min(B_vec)
+
+  if (B < 5) {
+    warning("Too few aligned bootstrap replicates for hypothesis testing.")
+    return(list(statistic = NA, df = K - 1, p.value = NA))
+  }
+
+  # Step 2: align replicates
+  boot_TIR_list_trimmed <- lapply(boot_TIR_list, function(x) x[seq_len(B)])
+
+  # Step 3: compute differences and test
   mu_diff <- estimates[-1] - estimates[1]
-  B <- length(boot_TIR_list[[1]])
   boot_diff_mat <- matrix(NA, nrow = B, ncol = K - 1)
 
   for (b in 1:B) {
-    boot_estimates <- sapply(boot_TIR_list, function(x) x[b])
+    boot_estimates <- sapply(boot_TIR_list_trimmed, function(x) x[b])
     boot_diff_mat[b, ] <- boot_estimates[-1] - boot_estimates[1]
   }
 
@@ -53,7 +65,7 @@ wald_test_TIR <- function(estimates, boot_TIR_list) {
 
   inv_Sigma <- tryCatch(solve(Sigma_D_hat), error = function(e) MASS::ginv(Sigma_D_hat))
   stat <- as.numeric(t(mu_diff) %*% inv_Sigma %*% mu_diff)
-  p_val <- 1 - pchisq(stat, df = K - 1)
+  p_val <- 1 - stats::pchisq(stat, df = K - 1)
 
   list(statistic = stat, df = K - 1, p.value = p_val)
 }
