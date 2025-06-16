@@ -195,8 +195,63 @@ ui <- fluidPage(
                  tableOutput("top_important_vars")
                )
              )
-    )
+    ),
 
+    tabPanel("Dynamic TIR Prediction", fluid = TRUE,
+             sidebarLayout(
+               sidebarPanel(
+                 wellPanel(
+                   style = "background-color: #ffe0e0; border: 1px solid red;",
+                   tags$p(
+                     style = "color: red; font-weight: bold;",
+                     "⚠️Warning: This tab is under development and may not function as expected. Please use with caution."
+                   )
+                 ),
+                 tags$h4("1. Upload Covariate File for Dynamic Prediction"),
+                 fileInput("dynamic_pred_covariate_file", "Upload Prediction Covariate File (.csv)", multiple = FALSE, accept = ".csv"),
+
+                 tags$h4("2. Upload CGM File for Dynamic Prediction"),
+                 fileInput("Dynamic_pred_covariate_file", "Upload Prediction CGM File (.csv)", multiple = FALSE, accept = ".csv"),
+
+                 tags$h4("3. Select Covariates for Model Training"),
+                 helpText("Select covariates from your cleaned dataset to use in training."),
+                 uiOutput("training_covariate_selector_dynamic_prediction"),
+
+                 tags$h4("4. Select Rolling Window for Model Training"),
+                 helpText("Select rolling window to extract CGM features from your cleaned dataset to use in training."),
+                 textInput("dynamic_prediction_rolling_window", "Rolling Window in Days(e.g., 3)", value = "3"),
+
+                 actionButton("train_model_dynamic_prediction", "Train Model"),
+                 br(), br(),
+
+                 #  tags$h4("2. Confirm Required Covariates"),
+                 #  helpText("The trained model requires the following covariates:"),
+                 #  uiOutput("required_covariates_ui"),
+
+                 tags$h4("5. Glucose Range"),
+                 textInput("dynamic_pred_target_range", "Target Glucose Range (e.g., 70,180)", value = "70,180"),
+
+                 tags$h4("6. Predict"),
+                 actionButton("dynamic_predict_TIR", "Predict TIR"),
+
+                 br(), br(),
+                 downloadButton("download_dynamic_prediction", "Download Dynamic Prediction Results")
+               ),
+
+               mainPanel(
+                 tags$h4("Preview: Uploaded Prediction File (Covariates merged with CGM data)"),
+                 helpText("This preview shows the covariates merged with CGM data for prediction."),
+                 DT::dataTableOutput("pred_combined_CGM_covariate_preview"),
+
+                 tags$h4("Dynamic Prediction Results"),
+                 DT::dataTableOutput("TIR_dynamic_prediction_result"),
+
+                 tags$h4("Top 5 Important Variables - Dynamic Prediction"),
+                 helpText("Based on the trained random forest model."),
+                 tableOutput("top_important_vars_dynamic_prediction")
+               )
+             )
+    )
 
   )
 )
